@@ -1,0 +1,1595 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PAU Dial — Glòries (PAU 100 completo + checklist)</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --stroke:rgba(255,255,255,.10);
+      --stroke2:rgba(255,255,255,.18);
+      --text:rgba(255,255,255,.92);
+      --muted:rgba(255,255,255,.72);
+      --muted2:rgba(255,255,255,.45);
+
+      --pau100:#39d98a; --pau200:#ffd166; --pau300:#ff5c7a; --pau400:#b77bff;
+      --cat-urb:#3ddbd9; --cat-dalt:#ff9f1c; --cat-lit:#4d7cff; --sys:#d1b3ff;
+
+      --nodeSize: 80px;
+      --panelW: 380px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%; margin:0; background:var(--bg); color:var(--text);
+      font-family:system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;}
+    button{font:inherit}
+
+    /* Topbar */
+    .topbar{
+      position:fixed; left:0; right:0; top:0; height:56px;
+      display:flex; align-items:center; gap:10px; padding:10px 12px;
+      background:linear-gradient(180deg, rgba(12,18,40,.92), rgba(12,18,40,.65));
+      border-bottom:1px solid var(--stroke);
+      z-index:50;
+      backdrop-filter: blur(10px);
+    }
+    .brand{display:flex; align-items:center; gap:10px; min-width:340px;}
+    .logo{
+      width:30px; height:30px; border-radius:10px;
+      background: radial-gradient(circle at 30% 30%, rgba(77,124,255,.90), rgba(61,219,217,.60), rgba(255,159,28,.35));
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      border: 1px solid rgba(255,255,255,.18);
+    }
+    .title{display:flex; flex-direction:column; line-height:1.05;}
+    .title b{font-size:13.5px}
+    .title span{font-size:11.5px; color:var(--muted2)}
+    .spacer{flex:1}
+
+    .btn{
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.04);
+      color:var(--text);
+      padding:8px 10px;
+      border-radius:12px;
+      display:inline-flex; gap:8px; align-items:center;
+      cursor:pointer;
+      transition: transform .08s ease, background .15s ease, border-color .15s ease;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .btn:hover{background: rgba(255,255,255,.06); border-color:var(--stroke2)}
+    .btn:active{transform: translateY(1px)}
+    .btn .dot{width:8px; height:8px; border-radius:50%; background: rgba(255,255,255,.35);
+      box-shadow: 0 0 0 3px rgba(255,255,255,.05);}
+    .btn.warn .dot{background: var(--pau200)}
+    .btn.ok .dot{background: var(--pau100)}
+    .kbd{
+      font-size:11px; color:var(--muted2);
+      padding:2px 7px; border:1px solid var(--stroke);
+      border-bottom-color: rgba(255,255,255,.08);
+      border-radius:8px;
+      background: rgba(255,255,255,.03);
+    }
+
+    .status{
+      display:flex; align-items:center; gap:10px;
+      padding:6px 10px;
+      border:1px solid var(--stroke);
+      border-radius:12px;
+      background: rgba(255,255,255,.03);
+      color: rgba(255,255,255,.78);
+      font-size:12px;
+      white-space:nowrap;
+    }
+    .status b{color:var(--text)}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;}
+
+    /* Layout under topbar */
+    .app{
+      position:fixed; left:0; right:0; top:56px; bottom:0;
+      display:grid;
+      grid-template-columns: var(--panelW) 1fr;
+      min-height:0;
+    }
+    .app.panelHidden{ grid-template-columns: 0 1fr; }
+
+    /* Left panel */
+    .panel{
+      border-right:1px solid var(--stroke);
+      background: rgba(12,18,40,.72);
+      backdrop-filter: blur(10px);
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+    .panelHidden .panel{display:none}
+    .panelHeader{
+      padding:10px 12px;
+      border-bottom:1px solid var(--stroke);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .panelHeader b{font-size:13px}
+    .seg{
+      display:inline-flex; gap:6px;
+      border:1px solid var(--stroke);
+      border-radius:12px;
+      padding:4px;
+      background: rgba(255,255,255,.02);
+    }
+    .seg button{
+      border:0;
+      background: transparent;
+      color: rgba(255,255,255,.72);
+      padding:6px 10px;
+      border-radius:10px;
+      cursor:pointer;
+      font-size:12px;
+    }
+    .seg button.active{
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.95);
+      border:1px solid rgba(255,255,255,.10);
+    }
+    .panelBody{
+      padding:10px 12px 14px 12px;
+      overflow:auto;
+      min-height:0;
+      flex:1;
+    }
+    .hint{
+      font-size:12px;
+      color: rgba(255,255,255,.65);
+      line-height:1.35;
+      background: rgba(255,255,255,.03);
+      border:1px solid var(--stroke);
+      border-radius:14px;
+      padding:10px 10px;
+      margin-bottom:10px;
+    }
+    .card{
+      background: rgba(255,255,255,.03);
+      border:1px solid var(--stroke);
+      border-radius:16px;
+      padding:10px;
+      margin-bottom:10px;
+    }
+    .card h3{
+      margin:0 0 8px 0;
+      font-size:12px;
+      letter-spacing:.2px;
+      color: rgba(255,255,255,.82);
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .pill{
+      font-size:11px;
+      padding:2px 8px;
+      border-radius:999px;
+      border:1px solid var(--stroke);
+      color: rgba(255,255,255,.70);
+    }
+    .routeItem{
+      padding:9px 10px;
+      border:1px solid var(--stroke);
+      border-radius:14px;
+      background: rgba(255,255,255,.03);
+      margin-bottom:8px;
+    }
+    .routeItem.active{ border-color: rgba(255,255,255,.24); background: rgba(255,255,255,.05); }
+    .routeItem .l1{font-size:12px; font-weight:800; letter-spacing:.15px;}
+    .routeItem .l2{font-size:12px; color: rgba(255,255,255,.74); margin-top:4px; line-height:1.25}
+    .tag{
+      font-size:10px; padding:2px 6px; border-radius:8px;
+      border:1px solid var(--stroke);
+      color: rgba(255,255,255,.70);
+      margin-left:8px;
+      display:inline-block;
+    }
+
+    .checkItem{
+      display:flex; gap:10px; align-items:flex-start;
+      padding:9px 10px;
+      border:1px solid var(--stroke);
+      border-radius:14px;
+      background: rgba(255,255,255,.03);
+      margin-bottom:8px;
+    }
+    .checkNum{
+      width:22px; height:22px; border-radius:999px;
+      display:flex; align-items:center; justify-content:center;
+      border:1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.03);
+      color: rgba(255,255,255,.85);
+      font-size:11px; font-weight:800;
+      flex:0 0 auto;
+      margin-top:1px;
+    }
+    .checkText .t1{font-size:12px; font-weight:800; letter-spacing:.15px;}
+    .checkText .t2{font-size:12px; color: rgba(255,255,255,.74); margin-top:4px; line-height:1.25}
+
+    .event{ padding:10px; border:1px solid var(--stroke); border-radius: 14px; background: rgba(255,255,255,.03); margin-bottom:8px; }
+    .event .t{font-size:11px; color:var(--muted2)}
+    .event .m{font-size:12.5px; color:var(--text); margin-top:4px; line-height:1.25}
+    .event .s{font-size:12px; color: rgba(255,255,255,.72); margin-top:6px}
+
+    /* Stage */
+    .stageWrap{
+      position:relative;
+      overflow:hidden;
+      background:
+        radial-gradient(circle at 50% 40%, rgba(77,124,255,.08), transparent 55%),
+        radial-gradient(circle at 20% 65%, rgba(61,219,217,.07), transparent 50%),
+        radial-gradient(circle at 85% 65%, rgba(255,159,28,.06), transparent 45%),
+        linear-gradient(180deg, rgba(255,255,255,.02), transparent 25%),
+        var(--bg);
+    }
+    .grid{
+      position:absolute; inset:0;
+      background-image:
+        linear-gradient(to right, rgba(255,255,255,.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,.04) 1px, transparent 1px);
+      background-size: 56px 56px;
+      opacity:.08;
+      pointer-events:none;
+    }
+
+    /* World */
+    .world{
+      position:absolute; left:0; top:0;
+      width: 7600px; height: 5600px;
+      transform-origin: 0 0;
+      cursor: grab;
+      user-select:none;
+    }
+    .world.dragging{cursor: grabbing}
+    .edges{position:absolute; inset:0; pointer-events:none;}
+    .nodes{position:absolute; inset:0;}
+
+    .dialRing{
+      position:absolute;
+      width: 760px; height: 760px;
+      border-radius: 50%;
+      border:1px dashed rgba(255,255,255,.08);
+      box-shadow: 0 0 0 36px rgba(255,255,255,.015) inset;
+      pointer-events:none;
+      opacity:.9;
+    }
+    .dialDots{
+      position:absolute; inset:0; border-radius:50%;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255,255,255,.14), transparent 18%),
+        radial-gradient(circle at 100% 50%, rgba(255,255,255,.14), transparent 18%),
+        radial-gradient(circle at 50% 100%, rgba(255,255,255,.14), transparent 18%),
+        radial-gradient(circle at 0% 50%, rgba(255,255,255,.14), transparent 18%);
+      opacity:.35;
+    }
+
+    /* Nodes */
+    .node{
+      position:absolute;
+      width: var(--nodeSize);
+      height: var(--nodeSize);
+      border-radius: 999px;
+      display:flex; align-items:center; justify-content:center;
+      text-align:center;
+      padding:8px;
+      border: 3px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.04);
+      box-shadow: 0 18px 50px rgba(0,0,0,.38);
+      backdrop-filter: blur(6px);
+      cursor:pointer;
+      transition: transform .16s ease, border-color .16s ease, filter .16s ease, opacity .16s ease, background .16s ease;
+    }
+    .node:hover{filter: brightness(1.08);}
+    .node:active{transform: translate(-50%, -50%) scale(.98) !important;}
+    .label{
+      display:flex; flex-direction:column; gap:3px;
+      line-height:1.05;
+      max-width: 130px;
+    }
+    .l1{font-size:11px; font-weight:800; letter-spacing:.15px;}
+    .l2{
+      font-size:10px;
+      color: rgba(255,255,255,.86);
+      display:-webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+      overflow:hidden;
+    }
+
+    .kind-root{ width: 114px; height: 114px; border-color: rgba(77,124,255,.70); background: rgba(77,124,255,.10); }
+    .kind-asset{ width: 92px; height: 92px; }
+    .kind-system{ width: 92px; height: 92px; }
+    .kind-group{ width: 96px; height: 96px; }
+    .kind-code{ width: 118px; height: 118px; border-width: 3px; }
+    .kind-step{ width: 142px; height: 142px; border-width: 3px; }
+    .kind-q{ width: 150px; height: 150px; border-width: 3px; }
+    .kind-choice{ width: 120px; height: 120px; border-width: 3px; }
+    .kind-end{ width: 140px; height: 140px; border-width: 3px; }
+
+    .cat-urb{ border-color: rgba(61,219,217,.90) !important; background: rgba(61,219,217,.16) !important; }
+    .cat-dalt{ border-color: rgba(255,159,28,.92) !important; background: rgba(255,159,28,.16) !important; }
+    .cat-lit{ border-color: rgba(77,124,255,.92) !important; background: rgba(77,124,255,.15) !important; }
+    .cat-sys{ border-color: rgba(209,179,255,.90) !important; background: rgba(209,179,255,.15) !important; }
+
+    .pau100{ border-color: rgba(57,217,138,.96) !important; background: rgba(57,217,138,.18) !important; }
+    .pau200{ border-color: rgba(255,209,102,.98) !important; background: rgba(255,209,102,.18) !important; }
+    .pau300{ border-color: rgba(255,92,122,.96) !important; background: rgba(255,92,122,.18) !important; }
+    .pau400{ border-color: rgba(183,123,255,.98) !important; background: rgba(183,123,255,.18) !important; }
+
+    .tone-action{ border-color: rgba(255,255,255,.22) !important; background: rgba(255,255,255,.05) !important; }
+    .tone-q{ border-color: rgba(255,255,255,.30) !important; background: rgba(255,255,255,.06) !important; }
+    .tone-choice{ border-color: rgba(77,124,255,.55) !important; background: rgba(77,124,255,.10) !important; }
+    .tone-link{ border-style: dashed !important; border-color: rgba(255,209,102,.75) !important; background: rgba(255,209,102,.10) !important; }
+    .tone-end{ border-color: rgba(255,255,255,.28) !important; background: rgba(255,255,255,.05) !important; }
+
+    .node.spawn{opacity:0; transform: translate(-50%,-50%) scale(.65);}
+    .node.spawn.show{opacity:1; transform: translate(-50%,-50%) scale(1); transition: opacity .22s ease, transform .22s ease;}
+    .node.selected{ outline: 2px solid rgba(255,255,255,.25); outline-offset: 2px; }
+    .node.choiceSelected{ outline: 2px solid rgba(77,124,255,.65); outline-offset: 2px; }
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo"></div>
+      <div class="title">
+        <b>PAU Dial (offline)</b>
+        <span>Glòries · PAU 100 (verde) completado · auto-despliegue + checklist</span>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn" id="btnPanel"><span class="dot"></span> Panel</button>
+      <button class="btn" id="btnHome"><span class="dot"></span> Centrar <span class="kbd">C</span></button>
+      <button class="btn warn" id="btnReset"><span class="dot"></span> Reiniciar <span class="kbd">R</span></button>
+      <button class="btn ok" id="btnExport"><span class="dot"></span> Exportar JSON</button>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="status">
+      <span>Arrastra · Rueda</span>
+      <span class="mono">Zoom:</span> <b id="zoomLabel">100%</b>
+    </div>
+
+    <div class="actions" style="margin-left:10px;">
+      <button class="btn" id="btnZoomOut"><span class="dot"></span> -</button>
+      <button class="btn" id="btnZoomIn"><span class="dot"></span> +</button>
+    </div>
+  </div>
+
+  <div class="app" id="app">
+    <aside class="panel" id="panel">
+      <div class="panelHeader">
+        <b>Rumbo</b>
+        <div class="seg">
+          <button id="tabRoute" class="active">Ruta</button>
+          <button id="tabHistory">Historial</button>
+        </div>
+      </div>
+
+      <div class="panelBody">
+        <div class="hint">
+          <b>Objetivo</b>: que el operador vea <b>preguntas + acciones</b> sin leer el documento.<br/>
+          <b>Tip</b>: cuando eliges una respuesta (Sí/No), el sistema despliega automáticamente la cadena de pasos hasta la siguiente pregunta.
+        </div>
+
+        <div id="routeView">
+          <div class="card">
+            <h3>Ruta actual <span class="pill" id="routeCount">0</span></h3>
+            <div id="routeList"></div>
+          </div>
+
+          <div class="card">
+            <h3>Checklist de acciones <span class="pill" id="actCount">0</span></h3>
+            <div id="actList"></div>
+          </div>
+        </div>
+
+        <div id="historyView" style="display:none;">
+          <div class="card">
+            <h3>Historial <span class="pill" id="histCount">0</span></h3>
+            <div id="historyList"></div>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn" id="btnCopyHistory"><span class="dot"></span> Copiar</button>
+            <button class="btn" id="btnClearHistory"><span class="dot"></span> Vaciar</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="stageWrap" id="stageWrap">
+      <div class="grid"></div>
+
+      <div class="world" id="world">
+        <div class="dialRing" id="dialRing"><div class="dialDots"></div></div>
+
+        <svg class="edges" id="edges" width="7600" height="5600" viewBox="0 0 7600 5600" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="edgeGrad" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0" stop-color="rgba(255,255,255,.25)" />
+              <stop offset="1" stop-color="rgba(255,255,255,.10)" />
+            </linearGradient>
+          </defs>
+        </svg>
+
+        <div class="nodes" id="nodes"></div>
+      </div>
+    </main>
+  </div>
+
+<script>
+/**********************************************************************
+ * CATÁLOGO
+ **********************************************************************/
+const CATALOG = {
+  tunnels: [
+    { id:"glories", label:"Glòries", cat:"urb" },
+    { id:"vila_olimpica", label:"Vila Olímp.", cat:"urb" },
+    { id:"lesseps", label:"Lesseps", cat:"urb" },
+    { id:"camelies", label:"Camèlies", cat:"urb" },
+    { id:"rovira", label:"Rovira", cat:"urb" },
+    { id:"badal", label:"Badal", cat:"urb" },
+    { id:"mitre", label:"Mitre", cat:"urb" },
+    { id:"maria_cristina", label:"Mª Cristina", cat:"urb" },
+    { id:"ronda_dalt", label:"R. Dalt", cat:"dalt" },
+    { id:"ronda_litoral", label:"R. Litoral", cat:"lit" }
+  ],
+  systems: [
+    { id:"sicotie", label:"SICOTIE" },
+    { id:"scada", label:"SCADA" },
+    { id:"cttv", label:"CTTV" },
+    { id:"comms", label:"COMMS" }
+  ]
+};
+
+/**********************************************************************
+ * PAU Glòries (listas)
+ **********************************************************************/
+const PAU_GLORIES = {
+  100: [
+    { code:"100-TRA", desc:"Circulación de vehículos especiales con autorización" },
+    { code:"101-TRA", desc:"Circulación de vehículos con mercancías peligrosas" },
+    { code:"110-AMB", desc:"Meteorología adversa: niebla, lluvia intensa, nevada o viento fuerte" },
+    { code:"115-AMB", desc:"Alto nivel de opacidad (visibilidad reducida)" },
+    { code:"120-AMB", desc:"Alta concentración de CO/NOx" },
+    { code:"130-TRA", desc:"Presencia de personal trabajando" },
+    { code:"140-TRA", desc:"Circulación muy lenta" },
+    { code:"150-TRA", desc:"Vehículo detenido en apartadero (eixamplament)" },
+    { code:"160-AVA", desc:"Avería en sistemas o daños estructurales leves" }
+  ],
+  200: [
+    { code:"200-TRA", desc:"Vertido de líquidos" },
+    { code:"210-TRA", desc:"Detección de exceso de gálibo" },
+    { code:"215-AMB", desc:"Muy alto nivel de opacidad" },
+    { code:"220-AMB", desc:"Alta concentración de CO/NOx (nivel superior)" },
+    { code:"230-TRA", desc:"Viandantes o vehículos no autorizados" },
+    { code:"240-TRA", desc:"Animal grande suelto o viandante errante" },
+    { code:"250-TRA", desc:"Vehículo detenido obstaculizando un carril" },
+    { code:"260-AVA", desc:"Funcionamiento degradado de sistemas (nivel medio)" },
+    { code:"270-TRA", desc:"Accidente sin vehículos pesados" },
+    { code:"280-TRA", desc:"Sentido contrario / conducción temeraria" }
+  ],
+  300: [
+    { code:"310-AMB", desc:"Calamarsa o nevada intensa" },
+    { code:"315-AMB", desc:"Excesivo nivel de opacidad" },
+    { code:"320-AMB", desc:"Excesiva concentración de CO/NOx" },
+    { code:"330-ILL", desc:"Manifestaciones o desorden público" },
+    { code:"360-AVA", desc:"Avería crítica / daños estructurales graves / grandes filtraciones" },
+    { code:"370-TRA", desc:"Accidente con vehículos pesados" },
+    { code:"380-TRA", desc:"Accidente con sustancias peligrosas" },
+    { code:"390-ILL", desc:"Sabotaje o atentado" }
+  ],
+  400: [
+    { code:"400-FOC", desc:"Incendio, explosión o pérdida súbita de visibilidad" }
+  ]
+};
+
+/**********************************************************************
+ * FLOWS (Glòries · PAU 100) — basado en diagramas oficiales
+ * Nota técnica: evitamos bucles “NO -> volver atrás” como enlaces (link) para mantener árbol.
+ **********************************************************************/
+const FLOW_GLORIES_100 = {
+  "100-TRA": {
+    title: "100-TRA — Vehículos especiales con autorización",
+    nodes: {
+      start:  { type:"action", t1:"COMUNICACIÓN", t2:"Establecer comunicación con el vehículo", next:["cttv_lock"] },
+      cttv_lock:{ type:"action", t1:"CTTV", t2:"Enclavar CTTV (seguimiento)", next:["q_galib"] },
+      q_galib:{ type:"question", t1:"¿EXCESO DE GÁLIBO HORIZONTAL?", t2:"", choices:[
+        { key:"Sí", t1:"Sí", t2:"Aplicar protocolo", next:["prot_tall"] },
+        { key:"No", t1:"No", t2:"Aplicar protocolo", next:["prot_lent"] }
+      ]},
+      prot_tall:{ type:"action", t1:"PROTOCOL", t2:"TALL DE CARRIL", next:["radio"] },
+      prot_lent:{ type:"action", t1:"PROTOCOL", t2:"VEHÍCULO LENTO", next:["radio"] },
+      radio:{ type:"action", t1:"RADIODIFUSIÓN", t2:"Vehículo circulando a velocidad reducida", next:["illum"] },
+      illum:{ type:"action", t1:"ILUMINACIÓN", t2:"Subir a nivel normal si estaba a medio flujo", next:["avisos"] },
+      avisos:{ type:"action", t1:"AVISOS", t2:"SCC · CGMR · Equipo de vialidad", next:["superv"] },
+      superv:{ type:"action", t1:"SUPERVISIÓN", t2:"Supervisión de la circulación", next:["q_fin"] },
+      q_fin:{ type:"question", t1:"¿FIN DEL INCIDENTE?", t2:"", choices:[
+        { key:"No", t1:"No", t2:"Continuar supervisión", next:["link_superv"] },
+        { key:"Sí", t1:"Sí", t2:"Cerrar", next:["end_inc","restore"] }
+      ]},
+      link_superv:{ type:"link", t1:"CONTINUAR", t2:"Volver a «Supervisión de la circulación»", next:[] },
+      end_inc:{ type:"end", t1:"FIN DEL INCIDENTE", t2:"", next:[] },
+      restore:{ type:"action", t1:"RESTABLECER", t2:"Condiciones normales de explotación", next:[] }
+    }
+  },
+
+  "101-TRA": {
+    title:"101-TRA — Vehículos con mercancías peligrosas",
+    nodes:{
+      start:{ type:"action", t1:"DETECCIÓN", t2:"CTTV / llamada", next:["prot_prec"] },
+      prot_prec:{ type:"action", t1:"PROTOCOL", t2:"PRECAUCIÓN", next:["radio"] },
+      radio:{ type:"action", t1:"RADIODIFUSIÓN", t2:"Vehículo circulando a velocidad reducida", next:["illum"] },
+      illum:{ type:"action", t1:"ILUMINACIÓN", t2:"Subir a nivel normal si estaba a medio flujo", next:["avisos"] },
+      avisos:{ type:"action", t1:"AVISOS", t2:"SCC · Equipo de mantenimiento", next:["superv"] },
+      superv:{ type:"action", t1:"SUPERVISIÓN", t2:"Supervisión del incidente", next:["q_fin"] },
+      q_fin:{ type:"question", t1:"¿FIN DEL INCIDENTE?", t2:"", choices:[
+        { key:"No", t1:"No", t2:"Continuar supervisión", next:["link_superv"] },
+        { key:"Sí", t1:"Sí", t2:"Cerrar", next:["end_inc","save_rec","restore","end_all"] }
+      ]},
+      link_superv:{ type:"link", t1:"CONTINUAR", t2:"Volver a «Supervisión del incidente»", next:[] },
+      end_inc:{ type:"end", t1:"FIN DEL INCIDENTE", t2:"", next:[] },
+      save_rec:{ type:"action", t1:"REGISTRO", t2:"Guardar grabación del incidente", next:[] },
+      restore:{ type:"action", t1:"RESTABLECER", t2:"Condiciones normales de explotación", next:[] },
+      end_all:{ type:"end", t1:"FIN", t2:"", next:[] }
+    }
+  },
+
+  "110-AMB": {
+    title:"110-AMB — Meteorología adversa (niebla/lluvia/viento/nevadas)",
+    nodes:{
+      start:{ type:"action", t1:"AVISOS", t2:"BCASA", next:["q_verify"] },
+      q_verify:{ type:"question", t1:"¿VERIFICACIÓN METEOROLÓGICA / CÁMARAS?", t2:"Confirmar el fenómeno", choices:[
+        { key:"No", t1:"No", t2:"No confirmado", next:["restore"] },
+        { key:"Sí", t1:"Sí", t2:"Confirmado", next:["cttv"] }
+      ]},
+      cttv:{ type:"action", t1:"CTTV", t2:"Visualizar cámaras", next:["q_impos"] },
+      q_impos:{ type:"question", t1:"¿(Nieve/Calamarsa) IMPOSIBILITA LA CIRCULACIÓN?", t2:"", choices:[
+        { key:"Sí", t1:"Sí", t2:"Derivar", next:["link_310"] },
+        { key:"No", t1:"No", t2:"Seguir 110-AMB", next:["senyal"] }
+      ]},
+      link_310:{ type:"link", t1:"DERIVAR", t2:"310-AMB — Calamarsa o nevada intensa", next:[] },
+      senyal:{ type:"action", t1:"SEÑALIZACIÓN", t2:"Niebla / lluvia intensa / viento fuerte / nieve", next:["illum"] },
+      illum:{ type:"action", t1:"ILUMINACIÓN", t2:"Refuerzo si es necesario", next:["avisos_cgm"] },
+      avisos_cgm:{ type:"action", t1:"AVISOS", t2:"CGM", next:["seguim"] },
+      seguim:{ type:"action", t1:"SEGUIMIENTO", t2:"Evolución del fenómeno", next:["q_norm"] },
+      q_norm:{ type:"question", t1:"¿SITUACIÓN NORMALIZADA?", t2:"", choices:[
+        { key:"No", t1:"No", t2:"Continuar seguimiento", next:["link_seguim"] },
+        { key:"Sí", t1:"Sí", t2:"Cerrar", next:["end_risk","restore"] }
+      ]},
+      link_seguim:{ type:"link", t1:"CONTINUAR", t2:"Volver a «Seguimiento de la evolución»", next:[] },
+      end_risk:{ type:"end", t1:"FIN DE LA SITUACIÓN DE RIESGO", t2:"", next:[] },
+      restore:{ type:"action", t1:"RESTABLECER", t2:"Condiciones normales de explotación", next:[] }
+    }
+  },
+
+  "115-AMB": {
+    title:"115-AMB — Alto nivel de opacidad (visibilidad reducida)",
+    nodes:{
+      start:{ type:"action", t1:"CTTV", t2:"Visualizar cámaras", next:["q_causa"] },
+      q_causa:{ type:"question", t1:"IDENTIFICAR CAUSA", t2:"", choices:[
+        { key:"Retenciones", t1:"RETENCIONES", t2:"Derivar", next:["link_140"] },
+        { key:"Incendios", t1:"INCENDIOS", t2:"Derivar", next:["link_400"] },
+        { key:"Otros", t1:"OTROS", t2:"Continuar 115-AMB", next:["senyal"] }
+      ]},
+      link_140:{ type:"link", t1:"DERIVAR", t2:"140-TRA — Circulación muy lenta", next:[] },
+      link_400:{ type:"link", t1:"DERIVAR", t2:"400-FOC — Incendio/explosión/pérdida súbita de visibilidad", next:[] },
+      senyal:{ type:"action", t1:"SEÑALIZACIÓN", t2:"MODERAR VELOCIDAD", next:["vent"] },
+      vent:{ type:"action", t1:"VENTILACIÓN", t2:"Confirmar régimen y corregir en su caso", next:["illum"] },
+      illum:{ type:"action", t1:"ILUMINACIÓN", t2:"Si está a medio flujo, subir a nivel normal", next:["superv"] },
+      superv:{ type:"action", t1:"SUPERVISIÓN", t2:"Supervisión de la situación", next:["q_emerg"] },
+      q_emerg:{ type:"question", t1:"¿UMBRALES NIVEL EMERGENCIA?", t2:"", choices:[
+        { key:"Sí", t1:"Sí", t2:"Derivar", next:["link_215"] },
+        { key:"No", t1:"No", t2:"Comprobar prealerta", next:["q_pre"] }
+      ]},
+      link_215:{ type:"link", t1:"DERIVAR", t2:"215-AMB — Muy alto nivel de opacidad", next:[] },
+      q_pre:{ type:"question", t1:"¿VALOR POR DEBAJO DE PREALERTA?", t2:"", choices:[
+        { key:"No", t1:"No", t2:"Continuar supervisión", next:["link_superv"] },
+        { key:"Sí", t1:"Sí", t2:"Cerrar", next:["end_risk","restore"] }
+      ]},
+      link_superv:{ type:"link", t1:"CONTINUAR", t2:"Volver a «Supervisión de la situación»", next:[] },
+      end_risk:{ type:"end", t1:"FIN DE LA SITUACIÓN DE RIESGO", t2:"", next:[] },
+      restore:{ type:"action", t1:"RESTABLECER", t2:"Condiciones normales de explotación", next:[] }
+    }
+  },
+
+  "120-AMB": {
+    title:"120-AMB — Alta concentración de CO/NOx",
+    nodes:{
+      start:{ type:"action", t1:"CTTV", t2:"Visualizar cámaras", next:["q_causa"] },
+      q_causa:{ type:"question", t1:"IDENTIFICAR CAUSA", t2:"", choices:[
+        { key:"Retenciones", t1:"RETENCIONES", t2:"Derivar", next:["link_140"] },
+        { key:"Incendios", t1:"INCENDIOS", t2:"Derivar", next:["link_400"] },
+        { key:"Otros", t1:"OTROS", t2:"Continuar 120-AMB", next:["senyal"] }
+      ]},
+      link_140:{ type:"link", t1:"DERIVAR", t2:"140-TRA — Circulación muy lenta", next:[] },
+      link_400:{ type:"link", t1:"DERIVAR", t2:"400-FOC — Incendio/explosión/pérdida súbita de visibilidad", next:[] },
+      senyal:{ type:"action", t1:"SEÑALIZACIÓN", t2:"MODERAR VELOCIDAD", next:["vent"] },
+      vent:{ type:"action", t1:"VENTILACIÓN", t2:"Confirmar régimen y corregir en su caso", next:["superv"] },
+      superv:{ type:"action", t1:"SUPERVISIÓN", t2:"Supervisión de la situación", next:["q_emerg"] },
+      q_emerg:{ type:"question", t1:"¿UMBRALES NIVEL EMERGENCIA?", t2:"", choices:[
+        { key:"Sí", t1:"Sí", t2:"Derivar", next:["link_220"] },
+        { key:"No", t1:"No", t2:"Comprobar prealerta", next:["q_pre"] }
+      ]},
+      link_220:{ type:"link", t1:"DERIVAR", t2:"220-AMB — Alta concentración CO/NOx (nivel superior)", next:[] },
+      q_pre:{ type:"question", t1:"¿VALOR POR DEBAJO DE PREALERTA?", t2:"", choices:[
+        { key:"No", t1:"No", t2:"Continuar supervisión", next:["link_superv"] },
+        { key:"Sí", t1:"Sí", t2:"Cerrar", next:["end_risk","restore"] }
+      ]},
+      link_superv:{ type:"link", t1:"CONTINUAR", t2:"Volver a «Supervisión de la situación»", next:[] },
+      end_risk:{ type:"end", t1:"FIN DE LA SITUACIÓN DE RIESGO", t2:"", next:[] },
+      restore:{ type:"action", t1:"RESTABLECER", t2:"Condiciones normales de explotación", next:[] }
+    }
+  },
+
+  "130-TRA": {
+    title:"130-TRA — Presencia de personal trabajando",
+    nodes:{
+      start:{ type:"question", t1:"UBICACIÓN DE LOS TRABAJOS", t2:"", choices:[
+        { key:"Galerías", t1:"GALERÍAS/LOCALES TÉCNICOS", t2:"", next:["q_llindars"] },
+        { key:"Tubo", t1:"TUBOS", t2:"", next:["q_imh"] }
+      ]},
+
+      q_imh:{ type:"question", t1:"¿IMH > 2000?", t2:"", choices:[
+        { key:"No", t1:"No", t2:"", next:["q_llindars"] },
+        { key:"Sí", t1:"Sí", t2:"", next:["q_urgent"] }
+      ]},
+      q_urgent:{ type:"question", t1:"¿URGENTE?", t2:"Si NO es urgente → NO autorizar", choices:[
+        { key:"No", t1:"No", t2:"NO autorizar", next:["no_aut_end","restore"] },
+        { key:"Sí", t1:"Sí", t2:"Continuar", next:["q_llindars"] }
+      ]},
+
+      q_llindars:{ type:"question", t1:"¿UMBRALES / NIVEL CONTAMINANTES CORRECTOS?", t2:"(supervisión ventilación)", choices:[
+        { key:"Altos", t1:"ALTOS", t2:"NO autorizar y corregir ventilación", next:["no_aut_tmp"] },
+        { key:"Correctos", t1:"CORRECTOS", t2:"Definir ubicación en tubo", next:["q_ubic2"] }
+      ]},
+      no_aut_tmp:{ type:"action", t1:"NO AUTORIZAR", t2:"Hasta normalizar contaminantes", next:["vent_corr","link_llindars"] },
+      vent_corr:{ type:"action", t1:"VENTILACIÓN", t2:"Confirmar régimen y corregir en su caso", next:[] },
+      link_llindars:{ type:"link", t1:"RE-EVALUAR", t2:"Volver a comprobar «Umbrales/Nivel contaminantes»", next:[] },
+
+      q_ubic2:{ type:"question", t1:"UBICACIÓN EN TUBO", t2:"", choices:[
+        { key:"Carril", t1:"EN CARRIL/VORAL", t2:"", next:["prot_tall"] },
+        { key:"Eix", t1:"EN APARTADERO", t2:"(eixamplament)", next:["prot_prec"] }
+      ]},
+      prot_tall:{ type:"action", t1:"PROTOCOL", t2:"TALL DE CARRIL", next:["illum_ref"] },
+      prot_prec:{ type:"action", t1:"PROTOCOL", t2:"PRECAUCIÓN", next:["illum_ref"] },
+      illum_ref:{ type:"action", t1:"ILUMINACIÓN", t2:"Refuerzo de la iluminación", next:["autor"] },
+      autor:{ type:"action", t1:"AUTORIZACIÓN", t2:"Autorizar trabajos", next:["cttv"] },
+      cttv:{ type:"action", t1:"CTTV", t2:"Visualizar cámaras", next:["q_fin"] },
+      q_fin:{ type:"question", t1:"¿FIN DE LOS TRABAJOS?", t2:"", choices:[
+        { key:"No", t1:"No", t2:"Continuar CTTV", next:["link_cttv"] },
+        { key:"Sí", t1:"Sí", t2:"Cerrar", next:["end_risk","restore"] }
+      ]},
+      link_cttv:{ type:"link", t1:"CONTINUAR", t2:"Volver a «CTTV — Visualizar cámaras»", next:[] },
+
+      no_aut_end:{ type:"end", t1:"NO AUTORIZAR", t2:"Trabajos no urgentes con IMH>2000", next:[] },
+      end_risk:{ type:"end", t1:"FIN DE LA SITUACIÓN DE RIESGO", t2:"", next:[] },
+      restore:{ type:"action", t1:"RESTABLECER", t2:"Condiciones normales de explotación", next:[] }
+    }
+  },
+
+  "140-TRA": {
+    title:"140-TRA — Circulación muy lenta",
+    nodes:{
+      start:{ type:"question", t1:"VERIFICACIÓN CTTV", t2:"¿Se confirma tráfico muy lento?", choices:[
+        { key:"No", t1:"No", t2:"No confirmado", next:["restore"] },
+        { key:"Sí", t1:"Sí", t2:"Confirmado", next:["senyal"] }
+      ]},
+      senyal:{ type:"action", t1:"SEÑALIZACIÓN", t2:"Advertir tráfico lento", next:["illum"] },
+      illum:{ type:"action", t1:"ILUMINACIÓN", t2:"Subir a nivel normal si estaba a medio flujo", next:["radio"] },
+      radio:{ type:"action", t1:"RADIODIFUSIÓN", t2:"Informar de retenciones", next:["determ"] },
+      determ:{ type:"action", t1:"CAUSAS", t2:"Determinar causas de la congestión (posible lanzamiento de otras pautas)", next:["link_altres","vent"] },
+      link_altres:{ type:"link", t1:"OTRAS PAUTAS", t2:"¿Vehículo detenido? → posible otra pauta de actuación", next:[] },
+      vent:{ type:"action", t1:"VENTILACIÓN", t2:"Supervisar niveles de contaminación y comprobar ventilación", next:["avisos"] },
+      avisos:{ type:"action", t1:"AVISOS", t2:"CGM", next:["superv"] },
+      superv:{ type:"action", t1:"SUPERVISIÓN", t2:"Supervisión de la situación", next:["q_fin"] },
+      q_fin:{ type:"question", t1:"¿FIN DE RIESGO?", t2:"", choices:[
+        { key:"No", t1:"No", t2:"Continuar (revisar causas)", next:["link_determ"] },
+        { key:"Sí", t1:"Sí", t2:"Cerrar", next:["end_risk","restore"] }
+      ]},
+      link_determ:{ type:"link", t1:"CONTINUAR", t2:"Volver a «Determinar causas de la congestión»", next:[] },
+      end_risk:{ type:"end", t1:"FIN DE LA SITUACIÓN DE RIESGO", t2:"", next:[] },
+      restore:{ type:"action", t1:"RESTABLECER", t2:"Condiciones normales de explotación", next:[] }
+    }
+  },
+
+  "150-TRA": {
+    title:"150-TRA — Vehículo detenido en apartadero",
+    nodes:{
+      start:{ type:"action", t1:"CTTV", t2:"Visualizar cámara más próxima al incidente", next:["senyal"] },
+      senyal:{ type:"action", t1:"SEÑALIZACIÓN", t2:"Vehículo parado en apartadero", next:["radio"] },
+      radio:{ type:"action", t1:"RADIODIFUSIÓN", t2:"Vehículo parado en apartadero", next:["mega"] },
+      mega:{ type:"action", t1:"MEGAFONÍA", t2:"Viandantes en calzada", next:["illum"] },
+      illum:{ type:"action", t1:"ILUMINACIÓN", t2:"Subir nivel si es necesario", next:["avisos"] },
+      avisos:{ type:"action", t1:"AVISOS", t2:"SCC", next:["superv"] },
+      superv:{ type:"action", t1:"SUPERVISIÓN", t2:"Verificar retirada del vehículo (CTTV) y ausencia de accidente secundario", next:["q_ret"] },
+      q_ret:{ type:"question", t1:"¿VEHÍCULO RETIRADO?", t2:"", choices:[
+        { key:"No", t1:"No", t2:"Continuar supervisión", next:["link_superv"] },
+        { key:"Sí", t1:"Sí", t2:"Cerrar", next:["end_risk","restore"] }
+      ]},
+      link_superv:{ type:"link", t1:"CONTINUAR", t2:"Volver a «Supervisión»", next:[] },
+      end_risk:{ type:"end", t1:"FIN DE LA SITUACIÓN DE RIESGO", t2:"", next:[] },
+      restore:{ type:"action", t1:"RESTABLECER", t2:"Condiciones normales de explotación", next:[] }
+    }
+  },
+
+  "160-AVA": {
+    title:"160-AVA — Avería leve (sistemas/estructura)",
+    nodes:{
+      start:{ type:"action", t1:"CTTV", t2:"Visualizar cámaras", next:["prot"] },
+      prot:{ type:"action", t1:"PROTOCOL", t2:"PRECAUCIÓN", next:["avisos"] },
+      avisos:{ type:"action", t1:"AVISOS", t2:"Equipo de mantenimiento", next:["atencio"] },
+      atencio:{ type:"action", t1:"VERIFICACIÓN", t2:"Atender solicitudes, verificar reparación de sistemas y daños estructurales", next:["q_fin"] },
+      q_fin:{ type:"question", t1:"¿FIN DEL INCIDENTE?", t2:"", choices:[
+        { key:"No", t1:"No", t2:"Continuar verificación", next:["link_atencio"] },
+        { key:"Sí", t1:"Sí", t2:"Cerrar", next:["end_risk","restore"] }
+      ]},
+      link_atencio:{ type:"link", t1:"CONTINUAR", t2:"Volver a «Verificación / Atención a mantenimiento»", next:[] },
+      end_risk:{ type:"end", t1:"FIN DE LA SITUACIÓN DE RIESGO", t2:"", next:[] },
+      restore:{ type:"action", t1:"RESTABLECER", t2:"Condiciones normales de explotación", next:[] }
+    }
+  }
+};
+
+function getFlowFor(tunnelId, pauCode){
+  if(tunnelId === "glories" && FLOW_GLORIES_100[pauCode]) return FLOW_GLORIES_100[pauCode];
+  return null;
+}
+
+/**********************************************************************
+ * ID helpers
+ **********************************************************************/
+function stableHash(str){
+  let h = 0x811c9dc5;
+  for(let i=0;i<str.length;i++){
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h>>>0).toString(36);
+}
+function flowId(tunnelId, pauCode, instance, localId){
+  return `flow:${tunnelId}:${pauCode}:${instance}:${localId}`;
+}
+function parseFlowId(id){
+  const p = id.split(":");
+  if(p.length < 5) return null;
+  return { tunnelId:p[1], pauCode:p[2], instance:p[3], localId:p.slice(4).join(":") };
+}
+function choiceId(parentFlowNodeId, choiceKey){
+  return `${parentFlowNodeId}::choice::${choiceKey}`;
+}
+function parseChoiceId(id){
+  const parts = id.split("::choice::");
+  if(parts.length !== 2) return null;
+  return { parent: parts[0], key: parts[1] };
+}
+function isFlowOrChoice(id){
+  return id.startsWith("flow:") || id.includes("::choice::");
+}
+
+/**********************************************************************
+ * Node data for dial
+ **********************************************************************/
+function getNodeData(id){
+  if(id === "root"){
+    return {
+      kind:"root", tone:"tone-action",
+      label1:"INICIO", label2:"(clic: on/off)",
+      children: [
+        ...CATALOG.tunnels.map(t => `asset:tunnel:${t.id}`),
+        ...CATALOG.systems.map(s => `asset:system:${s.id}`)
+      ]
+    };
+  }
+
+  if(id.startsWith("asset:tunnel:")){
+    const tid = id.split(":").slice(2).join(":");
+    const t = CATALOG.tunnels.find(x => x.id === tid);
+    const tone = t ? (t.cat === "urb" ? "cat-urb" : t.cat === "dalt" ? "cat-dalt" : "cat-lit") : "cat-urb";
+    return {
+      kind:"asset", tone,
+      label1: t ? t.label : tid,
+      label2: t ? (t.cat === "urb" ? "Urbano" : t.cat === "dalt" ? "R. Dalt" : "R. Litoral") : "",
+      children: [
+        `group:${id}:100`,
+        `group:${id}:200`,
+        `group:${id}:300`
+      ]
+    };
+  }
+
+  if(id.startsWith("asset:system:")){
+    const sid = id.split(":").slice(2).join(":");
+    const s = CATALOG.systems.find(x => x.id === sid);
+    const cases = {
+      sicotie: [{ id:"ko_total", label:"KO total" }, { id:"degradado", label:"Degradado" }],
+      scada: [{ id:"perdida_control", label:"Pérdida control" }, { id:"parcial", label:"Fallo parcial" }],
+      cttv: [{ id:"perdida_parcial", label:"Cámaras KO" }, { id:"perdida_total", label:"CTTV KO total" }],
+      comms: [{ id:"radio_ko", label:"Radio KO" }, { id:"megafonia_ko", label:"Megafonía KO" }, { id:"pmv_ko", label:"PMV KO" }]
+    };
+    const list = cases[sid] || [{id:"generic", label:"Incidencia"}];
+    return {
+      kind:"system", tone:"cat-sys",
+      label1: s ? s.label : sid,
+      label2: "Sistema",
+      children: list.map(c => `syscase:${sid}:${c.id}:${c.label}`)
+    };
+  }
+
+  if(id.startsWith("syscase:")){
+    const parts = id.split(":");
+    const label = parts.slice(3).join(":") || "Caso";
+    return { kind:"code", tone:"cat-sys", label1:label, label2:"Sistema", children:[] };
+  }
+
+  if(id.startsWith("group:")){
+    const parts = id.split(":");
+    const base = parseInt(parts[parts.length-1], 10);
+    const assetId = parts.slice(1, parts.length-1).join(":");
+    const tunnelId = assetId.split(":").slice(-1)[0];
+    const pauLists = (tunnelId === "glories") ? PAU_GLORIES : PAU_GLORIES; // por ahora
+
+    if(base === 300){
+      return { kind:"group", tone:"pau300", label1:"PAU 300", label2:"Rojo",
+        children: [...pauLists[300].map(it => `code:${assetId}:${it.code}:pau300`), `subgroup400:${assetId}`]
+      };
+    }
+    if(base === 100){
+      return { kind:"group", tone:"pau100", label1:"PAU 100", label2:"Verde",
+        children: pauLists[100].map(it => `code:${assetId}:${it.code}:pau100`)
+      };
+    }
+    return { kind:"group", tone:"pau200", label1:"PAU 200", label2:"Amarillo",
+      children: pauLists[200].map(it => `code:${assetId}:${it.code}:pau200`)
+    };
+  }
+
+  if(id.startsWith("subgroup400:")){
+    const assetId = id.split(":").slice(1).join(":");
+    const tunnelId = assetId.split(":").slice(-1)[0];
+    const pauLists = (tunnelId === "glories") ? PAU_GLORIES : PAU_GLORIES;
+    return { kind:"group", tone:"pau400", label1:"PAU 400", label2:"Violeta",
+      children: pauLists[400].map(it => `code:${assetId}:${it.code}:pau400`)
+    };
+  }
+
+  if(id.startsWith("code:")){
+    const parts = id.split(":");
+    const tone = parts[parts.length-1];
+    const codeText = parts[parts.length-2];
+    const assetId = parts.slice(1, parts.length-2).join(":");
+    const tunnelId = assetId.split(":").slice(-1)[0];
+    const groupNum = tone === "pau100" ? 100 : tone === "pau200" ? 200 : tone === "pau300" ? 300 : tone === "pau400" ? 400 : null;
+    const lists = (tunnelId === "glories") ? PAU_GLORIES : PAU_GLORIES;
+    let desc = "";
+    if(groupNum){
+      const item = (lists[groupNum] || []).find(x => x.code === codeText);
+      desc = item ? item.desc : "";
+    }
+
+    const flow = (tunnelId === "glories" && groupNum === 100) ? getFlowFor("glories", codeText) : null;
+    if(flow){
+      const inst = stableHash(id);
+      return {
+        kind:"code", tone,
+        label1: codeText,
+        label2: desc,
+        children: [ flowId("glories", codeText, inst, "start") ]
+      };
+    }
+
+    return { kind:"code", tone, label1: codeText, label2: desc, children: [] };
+  }
+
+  // FLOW node
+  if(id.startsWith("flow:")){
+    const meta = parseFlowId(id);
+    const flow = meta ? getFlowFor(meta.tunnelId, meta.pauCode) : null;
+    if(!flow) return { kind:"step", tone:"tone-link", label1:"DERIVAR", label2:"(flujo no disponible)", children:[] };
+
+    const node = flow.nodes[meta.localId];
+    if(!node) return { kind:"step", tone:"tone-action", label1:meta.localId, label2:"(nodo no encontrado)", children:[] };
+
+    if(node.type === "question"){
+      return { kind:"q", tone:"tone-q", label1: node.t1, label2: node.t2 || "", children: (node.choices||[]).map(ch => choiceId(id, ch.key)), _isQuestion:true };
+    }
+    if(node.type === "link"){
+      return { kind:"step", tone:"tone-link", label1: node.t1, label2: node.t2 || "", children: [] };
+    }
+    if(node.type === "end"){
+      return { kind:"end", tone:"tone-end", label1: node.t1, label2: node.t2 || "", children: (node.next||[]).map(n => flowId(meta.tunnelId, meta.pauCode, meta.instance, n)) };
+    }
+    return { kind:"step", tone:"tone-action", label1: node.t1, label2: node.t2 || "", children: (node.next||[]).map(n => flowId(meta.tunnelId, meta.pauCode, meta.instance, n)) };
+  }
+
+  // Choice node
+  const chMeta = parseChoiceId(id);
+  if(chMeta){
+    const parentMeta = parseFlowId(chMeta.parent);
+    const flow = parentMeta ? getFlowFor(parentMeta.tunnelId, parentMeta.pauCode) : null;
+    const parentNode = flow?.nodes[parentMeta.localId];
+    const choice = parentNode?.choices?.find(c => c.key === chMeta.key);
+    const children = (choice?.next || []).map(n => flowId(parentMeta.tunnelId, parentMeta.pauCode, parentMeta.instance, n));
+    return { kind:"choice", tone:"tone-choice", label1: choice?.t1 || chMeta.key, label2: choice?.t2 || "", children };
+  }
+
+  return { kind:"step", tone:"tone-action", label1:id, label2:"", children:[] };
+}
+
+/**********************************************************************
+ * MOTOR GRÁFICO
+ **********************************************************************/
+const ROOT_POS = { x: 3800, y: 2800 };
+
+const app = document.getElementById("app");
+const stageWrap = document.getElementById("stageWrap");
+const world = document.getElementById("world");
+const nodesLayer = document.getElementById("nodes");
+const edgesSvg = document.getElementById("edges");
+const dialRing = document.getElementById("dialRing");
+const zoomLabel = document.getElementById("zoomLabel");
+
+const btnPanel = document.getElementById("btnPanel");
+const btnHome = document.getElementById("btnHome");
+const btnReset = document.getElementById("btnReset");
+const btnZoomIn = document.getElementById("btnZoomIn");
+const btnZoomOut = document.getElementById("btnZoomOut");
+const btnExport = document.getElementById("btnExport");
+
+const tabRoute = document.getElementById("tabRoute");
+const tabHistory = document.getElementById("tabHistory");
+const routeView = document.getElementById("routeView");
+const historyView = document.getElementById("historyView");
+
+const routeList = document.getElementById("routeList");
+const routeCount = document.getElementById("routeCount");
+const actList = document.getElementById("actList");
+const actCount = document.getElementById("actCount");
+
+const historyList = document.getElementById("historyList");
+const histCount = document.getElementById("histCount");
+const btnCopyHistory = document.getElementById("btnCopyHistory");
+const btnClearHistory = document.getElementById("btnClearHistory");
+
+const state = {
+  nodes: new Map(),
+  edges: new Map(),
+  history: [],
+  selectedId: null,
+  transform: { tx:0, ty:0, scale:1.0 },
+  dragging:false,
+  dragStart:null,
+  dragBase:null,
+
+  // decision state: questionFlowNodeId -> selectedChoiceNodeId
+  decisions: new Map()
+};
+
+function pad2(n){ return String(n).padStart(2,"0"); }
+function nowStr(){
+  const d = new Date();
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
+}
+
+function setTransform(tx, ty, scale){
+  state.transform.scale = Math.max(0.55, Math.min(2.0, scale));
+  state.transform.tx = tx;
+  state.transform.ty = ty;
+  world.style.transform = `translate(${state.transform.tx}px, ${state.transform.ty}px) scale(${state.transform.scale})`;
+  zoomLabel.textContent = `${Math.round(state.transform.scale * 100)}%`;
+}
+function centerOnRoot(){
+  const rect = stageWrap.getBoundingClientRect();
+  const s = state.transform.scale;
+  const tx = rect.width/2 - ROOT_POS.x * s;
+  const ty = rect.height/2 - ROOT_POS.y * s;
+  setTransform(tx, ty, s);
+}
+function zoomAtScreenPoint(factor, screenX, screenY){
+  const rect = stageWrap.getBoundingClientRect();
+  const mx = screenX - rect.left;
+  const my = screenY - rect.top;
+  const old = state.transform.scale;
+  const neu = Math.max(0.55, Math.min(2.0, old * factor));
+  const wx = (mx - state.transform.tx) / old;
+  const wy = (my - state.transform.ty) / old;
+  const tx = mx - wx * neu;
+  const ty = my - wy * neu;
+  setTransform(tx, ty, neu);
+}
+
+function clearAll(){
+  nodesLayer.innerHTML = "";
+  edgesSvg.innerHTML = `
+    <defs>
+      <linearGradient id="edgeGrad" x1="0" x2="1" y1="0" y2="0">
+        <stop offset="0" stop-color="rgba(255,255,255,.25)" />
+        <stop offset="1" stop-color="rgba(255,255,255,.10)" />
+      </linearGradient>
+    </defs>
+  `;
+  state.nodes.clear();
+  state.edges.clear();
+  state.history = [];
+  state.selectedId = null;
+  state.decisions.clear();
+  renderHistory();
+  renderRouteAndChecklist();
+}
+
+function kindToClass(kind){
+  switch(kind){
+    case "root": return "kind-root";
+    case "asset": return "kind-asset";
+    case "system": return "kind-system";
+    case "group": return "kind-group";
+    case "code": return "kind-code";
+    case "q": return "kind-q";
+    case "choice": return "kind-choice";
+    case "end": return "kind-end";
+    default: return "kind-step";
+  }
+}
+
+function createNode(id, x, y, parentId=null, depth=0){
+  if(state.nodes.has(id)) return state.nodes.get(id);
+
+  const data = getNodeData(id);
+  const kindClass = kindToClass(data.kind);
+
+  const el = document.createElement("div");
+  el.className = `node ${kindClass} spawn`;
+  el.style.left = `${x}px`;
+  el.style.top = `${y}px`;
+  el.style.transform = "translate(-50%,-50%) scale(.65)";
+  el.dataset.id = id;
+
+  if(data.tone) el.classList.add(data.tone);
+
+  const label = document.createElement("div");
+  label.className = "label";
+  label.innerHTML = `<div class="l1">${escapeHtml(data.label1 || "")}</div>${(data.label2 ? `<div class="l2">${escapeHtml(data.label2)}</div>` : "")}`;
+  el.appendChild(label);
+
+  const tooltip = [data.label1, data.label2].filter(Boolean).join(" — ");
+  if(tooltip) el.title = tooltip;
+
+  el.addEventListener("mousedown", (e) => e.stopPropagation());
+  el.addEventListener("click", (e) => { e.stopPropagation(); onNodeClick(id); });
+
+  nodesLayer.appendChild(el);
+  requestAnimationFrame(() => el.classList.add("show"));
+
+  const obj = { id, data, x, y, el, parentId, depth, expanded:false, childrenIds:[] };
+  state.nodes.set(id, obj);
+  return obj;
+}
+
+function addEdge(parentId, childId){
+  const key = `${parentId}->${childId}`;
+  if(state.edges.has(key)) return;
+  const p = state.nodes.get(parentId);
+  const c = state.nodes.get(childId);
+  if(!p || !c) return;
+
+  const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  line.setAttribute("x1", p.x);
+  line.setAttribute("y1", p.y);
+  line.setAttribute("x2", c.x);
+  line.setAttribute("y2", c.y);
+  line.setAttribute("stroke", "url(#edgeGrad)");
+  line.setAttribute("stroke-width", "2");
+  line.setAttribute("opacity", "0.78");
+  line.setAttribute("stroke-linecap", "round");
+  edgesSvg.appendChild(line);
+  state.edges.set(key, line);
+}
+function removeEdge(parentId, childId){
+  const key = `${parentId}->${childId}`;
+  const line = state.edges.get(key);
+  if(line){ line.remove(); state.edges.delete(key); }
+}
+
+function distance(a,b){
+  const dx=a.x-b.x, dy=a.y-b.y;
+  return Math.sqrt(dx*dx+dy*dy);
+}
+function findFreeSpot(base, ang, radius, minDist=128){
+  for(let step=0; step<16; step++){
+    const r = radius + step*38;
+    const x = base.x + Math.cos(ang)*r;
+    const y = base.y + Math.sin(ang)*r;
+    const p = {x,y};
+    let ok = true;
+    for(const n of state.nodes.values()){
+      if(distance(p, n) < minDist){ ok=false; break; }
+    }
+    if(ok) return p;
+  }
+  return { x: base.x + Math.cos(ang)*radius, y: base.y + Math.sin(ang)*radius };
+}
+
+function expandNode(nodeId){
+  const node = state.nodes.get(nodeId);
+  if(!node || node.expanded) return;
+
+  node.data = getNodeData(nodeId);
+  const childIds = node.data.children || [];
+  if(childIds.length === 0){ node.expanded = true; return; }
+
+  node.childrenIds = [];
+
+  if(nodeId === "root"){
+    const n = childIds.length;
+    const radius = 370;
+    const start = -Math.PI/2;
+    const step = (Math.PI*2)/n;
+    for(let i=0; i<n; i++){
+      const cid = childIds[i];
+      const ang = start + i*step;
+      const x = node.x + Math.cos(ang)*radius;
+      const y = node.y + Math.sin(ang)*radius;
+      createNode(cid, x, y, nodeId, node.depth+1);
+      node.childrenIds.push(cid);
+      addEdge(nodeId, cid);
+    }
+    node.expanded = true;
+    return;
+  }
+
+  const outward = Math.atan2(node.y - ROOT_POS.y, node.x - ROOT_POS.x);
+  const n = childIds.length;
+  const spread = Math.min(Math.PI*1.10, (n-1)*(Math.PI/10) + Math.PI/4);
+  const start = outward - spread/2;
+
+  const baseRadius =
+    node.data.kind === "asset" || node.data.kind === "system" ? 270 :
+    node.data.kind === "group" ? 260 :
+    node.data.kind === "code" ? 260 :
+    node.data.kind === "q" ? 260 :
+    node.data.kind === "choice" ? 260 :
+    250;
+
+  for(let i=0; i<n; i++){
+    const cid = childIds[i];
+    const ang = (n===1) ? outward : (start + spread*(i/(n-1)));
+    const pos = findFreeSpot({x:node.x, y:node.y}, ang, baseRadius);
+    createNode(cid, pos.x, pos.y, nodeId, node.depth+1);
+    node.childrenIds.push(cid);
+    addEdge(nodeId, cid);
+  }
+
+  node.expanded = true;
+}
+
+function collapseNode(nodeId){
+  const node = state.nodes.get(nodeId);
+  if(!node || !node.expanded) return;
+
+  const children = [...(node.childrenIds || [])];
+  for(const cid of children){
+    const child = state.nodes.get(cid);
+    if(child && child.expanded) collapseNode(cid);
+
+    removeEdge(nodeId, cid);
+
+    if(child){
+      child.el.remove();
+      state.nodes.delete(cid);
+    }
+
+    for(const key of [...state.edges.keys()]){
+      const [p,c] = key.split("->");
+      if(p === cid || c === cid){
+        const line = state.edges.get(key);
+        if(line) line.remove();
+        state.edges.delete(key);
+      }
+    }
+  }
+  node.childrenIds = [];
+  node.expanded = false;
+}
+
+function setSelected(nodeId){
+  for(const n of state.nodes.values()){
+    n.el.classList.remove("selected");
+    n.el.classList.remove("choiceSelected");
+  }
+  const selected = state.nodes.get(nodeId);
+  if(selected) selected.el.classList.add("selected");
+  if(parseChoiceId(nodeId) && selected) selected.el.classList.add("choiceSelected");
+}
+
+/**********************************************************************
+ * Auto-expand logic: despliega cadena lineal hasta la siguiente pregunta
+ **********************************************************************/
+function autoExpandLinearFrom(startId, limit=30){
+  let curId = startId;
+  let steps = 0;
+  while(steps < limit){
+    const cur = state.nodes.get(curId);
+    if(!cur) break;
+
+    if(!cur.expanded) expandNode(curId);
+
+    const data = cur.data || getNodeData(curId);
+    if(data.kind === "q"){ // stop at question (but keep expanded to show choices)
+      if(!cur.expanded) expandNode(curId);
+      break;
+    }
+
+    const kids = data.children || [];
+    if(kids.length !== 1) break;
+
+    const nextId = kids[0];
+    const next = state.nodes.get(nextId);
+    if(!next){
+      // ensure creation
+      expandNode(curId);
+    }
+
+    curId = nextId;
+    steps++;
+  }
+  // select the last visited node for better "ruta"
+  state.selectedId = curId;
+  setSelected(curId);
+  renderRouteAndChecklist();
+}
+
+/**********************************************************************
+ * Panel: ruta + checklist + historial
+ **********************************************************************/
+function addHistory(title, detail){
+  state.history.push({ time: nowStr(), title, detail });
+  renderHistory();
+}
+
+function renderHistory(){
+  historyList.innerHTML = "";
+  histCount.textContent = String(state.history.length);
+  if(state.history.length === 0){
+    const div = document.createElement("div");
+    div.className = "hint";
+    div.textContent = "Sin eventos todavía.";
+    historyList.appendChild(div);
+    return;
+  }
+  for(let i=state.history.length-1; i>=0; i--){
+    const e = state.history[i];
+    const div = document.createElement("div");
+    div.className = "event";
+    div.innerHTML = `<div class="t">${escapeHtml(e.time)}</div><div class="m">${escapeHtml(e.title)}</div><div class="s">${escapeHtml(e.detail||"")}</div>`;
+    historyList.appendChild(div);
+  }
+}
+
+function buildRouteChain(nodeId){
+  const chain = [];
+  let cur = state.nodes.get(nodeId);
+  while(cur){
+    chain.push(cur);
+    if(!cur.parentId) break;
+    cur = state.nodes.get(cur.parentId);
+  }
+  chain.reverse();
+  return chain;
+}
+
+function renderRouteAndChecklist(){
+  routeList.innerHTML = "";
+  actList.innerHTML = "";
+
+  if(!state.selectedId || !state.nodes.has(state.selectedId)){
+    routeCount.textContent = "0";
+    actCount.textContent = "0";
+    const div = document.createElement("div");
+    div.className = "hint";
+    div.textContent = "Selecciona un nodo para ver ruta y checklist.";
+    routeList.appendChild(div);
+    return;
+  }
+
+  const chain = buildRouteChain(state.selectedId);
+  routeCount.textContent = String(chain.length);
+
+  // Ruta
+  for(const n of chain){
+    const d = n.data || getNodeData(n.id);
+
+    const typeTag =
+      d.kind === "code" ? "PAU" :
+      d.kind === "q" ? "PREGUNTA" :
+      d.kind === "choice" ? "DECISIÓN" :
+      d.kind === "step" ? "ACCIÓN" :
+      d.kind === "end" ? "FIN" :
+      d.kind === "group" ? "GRUPO" :
+      d.kind === "asset" ? "TÚNEL" :
+      d.kind === "root" ? "INICIO" :
+      "NODO";
+
+    const div = document.createElement("div");
+    div.className = "routeItem" + (n.id === state.selectedId ? " active" : "");
+    div.innerHTML = `<div class="l1">${escapeHtml(d.label1 || "")}<span class="tag">${typeTag}</span></div>${d.label2 ? `<div class="l2">${escapeHtml(d.label2)}</div>` : ""}`;
+    routeList.appendChild(div);
+  }
+
+  // Checklist: solo acciones/fin dentro de flujo (a partir del primer flow: o code PAU)
+  const startIdx = chain.findIndex(n => (n.id.startsWith("flow:") || n.id.startsWith("code:")));
+  const sub = (startIdx >= 0) ? chain.slice(startIdx) : chain;
+  const actions = sub.filter(n => {
+    const k = n.data?.kind || getNodeData(n.id).kind;
+    return (k === "step" || k === "end");
+  });
+
+  actCount.textContent = String(actions.length);
+
+  if(actions.length === 0){
+    const div = document.createElement("div");
+    div.className = "hint";
+    div.textContent = "No hay acciones en la ruta actual (elige una decisión o despliega un paso).";
+    actList.appendChild(div);
+    return;
+  }
+
+  actions.forEach((n, idx) => {
+    const d = n.data || getNodeData(n.id);
+    const item = document.createElement("div");
+    item.className = "checkItem";
+    item.innerHTML = `
+      <div class="checkNum">${idx+1}</div>
+      <div class="checkText">
+        <div class="t1">${escapeHtml(d.label1 || "")}</div>
+        ${d.label2 ? `<div class="t2">${escapeHtml(d.label2)}</div>` : ""}
+      </div>
+    `;
+    actList.appendChild(item);
+  });
+}
+
+/**********************************************************************
+ * Choice selection: una sola rama por pregunta; permite cambiar de opinión
+ **********************************************************************/
+function handleChoiceClick(choiceNodeId){
+  const meta = parseChoiceId(choiceNodeId);
+  if(!meta) return;
+  const questionId = meta.parent;
+
+  // Ensure question node expanded
+  const qNode = state.nodes.get(questionId);
+  if(qNode && !qNode.expanded) expandNode(questionId);
+
+  const prev = state.decisions.get(questionId);
+
+  // If clicking the same selected choice: toggle collapse + clear decision
+  if(prev === choiceNodeId){
+    const cNode = state.nodes.get(choiceNodeId);
+    if(cNode && cNode.expanded){
+      collapseNode(choiceNodeId);
+      state.decisions.delete(questionId);
+      addHistory("Deshacer decisión", `${getNodeData(choiceNodeId).label1}`);
+      state.selectedId = questionId;
+      setSelected(questionId);
+      renderRouteAndChecklist();
+      return;
+    }
+  }
+
+  // Collapse other choice branches under the same question
+  const qData = getNodeData(questionId);
+  const siblings = qData.children || [];
+  for(const sib of siblings){
+    if(sib === choiceNodeId) continue;
+    const sibNode = state.nodes.get(sib);
+    if(sibNode && sibNode.expanded) collapseNode(sib);
+  }
+
+  // Collapse previous branch if different
+  if(prev && prev !== choiceNodeId){
+    const prevNode = state.nodes.get(prev);
+    if(prevNode && prevNode.expanded) collapseNode(prev);
+  }
+
+  state.decisions.set(questionId, choiceNodeId);
+
+  // Expand chosen and auto-expand the linear chain
+  const cNode = state.nodes.get(choiceNodeId);
+  if(cNode && cNode.expanded){
+    // already expanded: keep it, but still update selection
+    state.selectedId = choiceNodeId;
+    setSelected(choiceNodeId);
+    renderRouteAndChecklist();
+    return;
+  }
+
+  expandNode(choiceNodeId);
+  addHistory("Decisión", `${getNodeData(choiceNodeId).label1} → ${getNodeData(choiceNodeId).label2 || ""}`.trim());
+
+  // Auto expand from choice (show steps until next question)
+  autoExpandLinearFrom(choiceNodeId);
+}
+
+/**********************************************************************
+ * Click handler (toggle + auto)
+ **********************************************************************/
+function onNodeClick(nodeId){
+  // Choices have special handling
+  if(parseChoiceId(nodeId)){
+    handleChoiceClick(nodeId);
+    return;
+  }
+
+  const node = state.nodes.get(nodeId);
+  if(!node) return;
+
+  const label = (node.data?.label1) || getNodeData(nodeId).label1 || nodeId;
+
+  if(node.expanded){
+    collapseNode(nodeId);
+    addHistory(`Recoger: ${label}`, `id=${nodeId}`);
+    state.selectedId = nodeId;
+    setSelected(nodeId);
+    renderRouteAndChecklist();
+    return;
+  }
+
+  expandNode(nodeId);
+  addHistory(`Desplegar: ${label}`, `id=${nodeId}`);
+
+  state.selectedId = nodeId;
+  setSelected(nodeId);
+  renderRouteAndChecklist();
+
+  // Auto expand behaviour for flows:
+  // - If it's a PAU code that has a flow child, auto expand from its only child
+  // - If it's inside a flow, auto expand to next question
+  const d = getNodeData(nodeId);
+  const kids = d.children || [];
+  if(kids.length === 1 && (kids[0].startsWith("flow:") || parseChoiceId(kids[0]))){
+    // ensure child exists (created by expand)
+    autoExpandLinearFrom(kids[0]);
+  }else if(nodeId.startsWith("flow:")){
+    autoExpandLinearFrom(nodeId);
+  }
+}
+
+/**********************************************************************
+ * Export
+ **********************************************************************/
+function exportSession(){
+  const nodes = [];
+  for(const n of state.nodes.values()){
+    nodes.push({
+      id: n.id,
+      label1: n.data?.label1,
+      label2: n.data?.label2,
+      kind: n.data?.kind,
+      x: n.x, y: n.y,
+      parentId: n.parentId,
+      depth: n.depth,
+      expanded: n.expanded
+    });
+  }
+  return {
+    exportedAt: new Date().toISOString(),
+    history: state.history,
+    decisions: Array.from(state.decisions.entries()),
+    nodes
+  };
+}
+function downloadJson(obj, filename){
+  const blob = new Blob([JSON.stringify(obj, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+}
+
+/**********************************************************************
+ * Init
+ **********************************************************************/
+function init(){
+  clearAll();
+  dialRing.style.left = (ROOT_POS.x - 380) + "px";
+  dialRing.style.top  = (ROOT_POS.y - 380) + "px";
+
+  createNode("root", ROOT_POS.x, ROOT_POS.y, null, 0);
+
+  // INICIO activado por defecto
+  expandNode("root");
+  state.nodes.get("root").expanded = true;
+
+  state.selectedId = "root";
+  setSelected("root");
+  renderRouteAndChecklist();
+  centerOnRoot();
+}
+
+/**********************************************************************
+ * UI events
+ **********************************************************************/
+btnPanel.addEventListener("click", () => {
+  app.classList.toggle("panelHidden");
+  setTimeout(centerOnRoot, 0);
+});
+
+btnHome.addEventListener("click", centerOnRoot);
+btnReset.addEventListener("click", init);
+
+btnZoomIn.addEventListener("click", () => zoomAtScreenPoint(1.12, window.innerWidth/2, 56 + 10));
+btnZoomOut.addEventListener("click", () => zoomAtScreenPoint(0.90, window.innerWidth/2, 56 + 10));
+
+btnExport.addEventListener("click", () => {
+  const exported = exportSession();
+  const name = `sesion_pau_${new Date().toISOString().slice(0,19).replace(/[:T]/g,"-")}.json`;
+  downloadJson(exported, name);
+  addHistory("Exportar JSON", name);
+});
+
+tabRoute.addEventListener("click", () => {
+  tabRoute.classList.add("active"); tabHistory.classList.remove("active");
+  routeView.style.display = ""; historyView.style.display = "none";
+});
+tabHistory.addEventListener("click", () => {
+  tabHistory.classList.add("active"); tabRoute.classList.remove("active");
+  routeView.style.display = "none"; historyView.style.display = "";
+});
+
+btnCopyHistory.addEventListener("click", async () => {
+  const lines = state.history.map(e => `[${e.time}] ${e.title} — ${e.detail}`).join("\n");
+  try{
+    await navigator.clipboard.writeText(lines || "");
+    addHistory("Historial copiado", "");
+  }catch{
+    alert("No se pudo copiar (permiso del navegador).");
+  }
+});
+btnClearHistory.addEventListener("click", () => { state.history = []; renderHistory(); });
+
+/* Pan */
+world.addEventListener("mousedown", (e) => {
+  if(e.button !== 0) return;
+  state.dragging = true;
+  world.classList.add("dragging");
+  state.dragStart = { x: e.clientX, y: e.clientY };
+  state.dragBase = { tx: state.transform.tx, ty: state.transform.ty };
+});
+window.addEventListener("mousemove", (e) => {
+  if(!state.dragging) return;
+  const dx = e.clientX - state.dragStart.x;
+  const dy = e.clientY - state.dragStart.y;
+  setTransform(state.dragBase.tx + dx, state.dragBase.ty + dy, state.transform.scale);
+});
+window.addEventListener("mouseup", () => {
+  state.dragging = false;
+  world.classList.remove("dragging");
+});
+
+/* Wheel zoom */
+stageWrap.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  zoomAtScreenPoint(e.deltaY < 0 ? 1.08 : 0.92, e.clientX, e.clientY);
+}, {passive:false});
+
+/* Shortcuts */
+window.addEventListener("keydown", (e) => {
+  if(e.key === "r" || e.key === "R") init();
+  if(e.key === "c" || e.key === "C") centerOnRoot();
+});
+
+/* Boot */
+init();
+</script>
+</body>
+</html>
