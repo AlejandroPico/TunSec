@@ -59,4 +59,3 @@ ORDER BY table_name, item_type, column_id;
 
 - `NVARCHAR(MAX)` es compatible con SQL Server 2022. Si DBeaver lo marca en rojo, normalmente es un falso positivo del parser.
 - `ISJSON()` es compatible y el script fuerza `COMPATIBILITY_LEVEL = 160`.
-- El script no contiene ninguna referencia a `Cocherama`; está pensado para un sistema nuevo.
