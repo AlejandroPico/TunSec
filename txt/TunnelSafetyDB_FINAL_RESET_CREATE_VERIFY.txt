@@ -1,90 +1,50 @@
-/* =============================================================================
-   Tunnel Safety Decision Support DB - SQL Server 2022
-   Archivo: 001_create_tunnel_safety_db.sql
+/*
+================================================================================
+ TUNNEL SAFETY DECISION SUPPORT DATABASE
+ SQL Server 2022 - SQL FINAL ÚNICO: RESET + CREACIÓN + VERIFICACIÓN
 
-   OBJETIVO
-   -------
-   Crear una base de datos documental y operativa para un sistema informático que
-   agilice la toma de decisiones en protocolos de seguridad de túneles.
+ Archivo:
+   TunnelSafetyDB_FINAL_RESET_CREATE_VERIFY.sql
 
-   El modelo está pensado para ser versátil:
-   - varias organizaciones y redes de túneles;
-   - túneles con múltiples tubos, zonas y localizaciones;
-   - planes de emergencia/PAU versionados;
-   - catálogo de incidentes por nivel, familia y esquema de código;
-   - protocolos como workflows con pasos, decisiones, transiciones y acciones;
-   - notificaciones a organismos/contactos;
-   - incidencias reales, ejecuciones de protocolos, acciones y auditoría.
+ AVISO:
+   Este script BORRA completamente TunnelSafetyDB si ya existe y después la
+   vuelve a crear desde cero. Úsalo solo en desarrollo/local, no en producción.
 
-   COMPATIBILIDAD
-   --------------
-   - SQL Server 2022.
-   - COMPATIBILITY_LEVEL = 160.
-   - ISJSON() está soportado.
-   - NVARCHAR(MAX) está soportado. Si DBeaver lo marca en rojo, normalmente es
-     un falso positivo del parser del editor, no del motor de SQL Server.
+================================================================================
+*/
 
-   DOCUMENTACIÓN INTERNA
-   ---------------------
-   Además de comentarios en este script, las tablas y columnas quedan documentadas
-   con extended properties estándar de SQL Server: MS_Description.
+SET NOCOUNT ON
+SET XACT_ABORT ON
 
-   Puedes consultar la documentación desde la propia base de datos con:
+USE [master]
+GO
 
-       SELECT * FROM tunnel.v_TableDocumentation ORDER BY table_name;
-
-       SELECT * FROM tunnel.v_ColumnDocumentation
-       ORDER BY table_name, column_id;
-
-       SELECT * FROM tunnel.v_DatabaseDictionary
-       ORDER BY table_name, item_type, column_id;
-
-   EJECUCIÓN EN DBEAVER
-   --------------------
-   Ejecuta el script completo contra tu servidor SQL Server. El script crea la
-   base [TunnelSafetyDB] si no existe y cambia de contexto con USE [TunnelSafetyDB]
-   de forma real, no mediante EXEC('USE ...').
-
-   ============================================================================= */
-
-SET NOCOUNT ON;
-SET XACT_ABORT ON;
-
--------------------------------------------------------------------------------
--- 1) CREACIÓN DE BASE DE DATOS DESTINO
--------------------------------------------------------------------------------
-IF DB_ID(N'TunnelSafetyDB') IS NULL
+IF DB_ID(N'TunnelSafetyDB') IS NOT NULL
 BEGIN
-    PRINT N'Creando base de datos [TunnelSafetyDB]...';
-    EXEC(N'CREATE DATABASE [TunnelSafetyDB];');
+    ALTER DATABASE [TunnelSafetyDB] SET SINGLE_USER WITH ROLLBACK IMMEDIATE
+    DROP DATABASE [TunnelSafetyDB]
 END
-ELSE
-BEGIN
-    PRINT N'La base de datos [TunnelSafetyDB] ya existe. Se validará el esquema.';
-END;
+GO
 
-ALTER DATABASE [TunnelSafetyDB] SET COMPATIBILITY_LEVEL = 160;
-ALTER DATABASE [TunnelSafetyDB] SET RECOVERY SIMPLE;
+CREATE DATABASE [TunnelSafetyDB]
+GO
 
--------------------------------------------------------------------------------
--- 2) CAMBIO REAL DE CONTEXTO
---    IMPORTANTE: no usar EXEC('USE ...') porque no cambia el contexto externo.
--------------------------------------------------------------------------------
-USE [TunnelSafetyDB];
+ALTER DATABASE [TunnelSafetyDB] SET COMPATIBILITY_LEVEL = 160
+ALTER DATABASE [TunnelSafetyDB] SET RECOVERY SIMPLE
+GO
 
--------------------------------------------------------------------------------
--- 3) CREACIÓN DEL SCHEMA LÓGICO
--------------------------------------------------------------------------------
+USE [TunnelSafetyDB]
+GO
+
 IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = N'tunnel')
 BEGIN
-    EXEC(N'CREATE SCHEMA [tunnel] AUTHORIZATION [dbo];');
-END;
+    EXEC(N'CREATE SCHEMA [tunnel] AUTHORIZATION [dbo]')
+END
+GO
 
 -------------------------------------------------------------------------------
 -- 4) CREACIÓN DE TABLAS, CLAVES, CHECKS E ÍNDICES
 -------------------------------------------------------------------------------
-BEGIN TRY
-BEGIN TRAN;
 
 /* ORGANIZATION
    Organización propietaria, gestora o concesionaria responsable de una o varias instalaciones o
@@ -110,13 +70,13 @@ BEGIN
         -- meta_json: Campo JSON extensible para datos adicionales no normalizados.
         meta_json NVARCHAR(MAX) NULL,
         CONSTRAINT CK_Organization_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_Organization_name' AND object_id = OBJECT_ID(N'tunnel.Organization'))
 BEGIN
-    CREATE UNIQUE INDEX UX_Organization_name ON tunnel.Organization(name);
-END;
+    CREATE UNIQUE INDEX UX_Organization_name ON tunnel.Organization(name)
+END
 
 
 /* FACILITY
@@ -148,18 +108,18 @@ BEGIN
         CONSTRAINT FK_Facility_Organization FOREIGN KEY (organization_id) REFERENCES tunnel.Organization(organization_id),
         CONSTRAINT CK_Facility_type CHECK (facility_type IN ('CITY_NETWORK','HIGHWAY_CONCESSION','SINGLE_TUNNEL','CONTROL_CENTER_SCOPE')),
         CONSTRAINT CK_Facility_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_Facility_org_name' AND object_id = OBJECT_ID(N'tunnel.Facility'))
 BEGIN
-    CREATE UNIQUE INDEX UX_Facility_org_name ON tunnel.Facility(organization_id, name);
-END;
+    CREATE UNIQUE INDEX UX_Facility_org_name ON tunnel.Facility(organization_id, name)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Facility_organization' AND object_id = OBJECT_ID(N'tunnel.Facility'))
 BEGIN
-    CREATE INDEX IX_Facility_organization ON tunnel.Facility(organization_id);
-END;
+    CREATE INDEX IX_Facility_organization ON tunnel.Facility(organization_id)
+END
 
 
 /* TUNNEL
@@ -199,18 +159,18 @@ BEGIN
         CONSTRAINT FK_Tunnel_Facility FOREIGN KEY (facility_id) REFERENCES tunnel.Facility(facility_id),
         CONSTRAINT CK_Tunnel_status CHECK (tunnel_status IN ('ACTIVE','WORKS','DECOMMISSIONED')),
         CONSTRAINT CK_Tunnel_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_Tunnel_facility_name' AND object_id = OBJECT_ID(N'tunnel.Tunnel'))
 BEGIN
-    CREATE UNIQUE INDEX UX_Tunnel_facility_name ON tunnel.Tunnel(facility_id, name);
-END;
+    CREATE UNIQUE INDEX UX_Tunnel_facility_name ON tunnel.Tunnel(facility_id, name)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Tunnel_facility' AND object_id = OBJECT_ID(N'tunnel.Tunnel'))
 BEGIN
-    CREATE INDEX IX_Tunnel_facility ON tunnel.Tunnel(facility_id);
-END;
+    CREATE INDEX IX_Tunnel_facility ON tunnel.Tunnel(facility_id)
+END
 
 
 /* TUBE
@@ -241,18 +201,18 @@ BEGIN
         CONSTRAINT FK_Tube_Tunnel FOREIGN KEY (tunnel_id) REFERENCES tunnel.Tunnel(tunnel_id),
         CONSTRAINT CK_Tube_direction CHECK (direction IN ('N','S','E','W','A_TO_B','B_TO_A','BIDIR')),
         CONSTRAINT CK_Tube_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_Tube_tunnel_name' AND object_id = OBJECT_ID(N'tunnel.Tube'))
 BEGIN
-    CREATE UNIQUE INDEX UX_Tube_tunnel_name ON tunnel.Tube(tunnel_id, name);
-END;
+    CREATE UNIQUE INDEX UX_Tube_tunnel_name ON tunnel.Tube(tunnel_id, name)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Tube_tunnel' AND object_id = OBJECT_ID(N'tunnel.Tube'))
 BEGIN
-    CREATE INDEX IX_Tube_tunnel ON tunnel.Tube(tunnel_id);
-END;
+    CREATE INDEX IX_Tube_tunnel ON tunnel.Tube(tunnel_id)
+END
 
 
 /* ZONE
@@ -280,18 +240,18 @@ BEGIN
         CONSTRAINT CK_Zone_type CHECK (zone_type IN ('OPERATIONAL','FIRE_COMPARTMENT','EVACUATION','RISK','VULNERABLE')),
         CONSTRAINT CK_Zone_chainage CHECK (start_chainage_m IS NULL OR end_chainage_m IS NULL OR start_chainage_m <= end_chainage_m),
         CONSTRAINT CK_Zone_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_Zone_tube_name' AND object_id = OBJECT_ID(N'tunnel.Zone'))
 BEGIN
-    CREATE UNIQUE INDEX UX_Zone_tube_name ON tunnel.Zone(tube_id, name);
-END;
+    CREATE UNIQUE INDEX UX_Zone_tube_name ON tunnel.Zone(tube_id, name)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Zone_tube' AND object_id = OBJECT_ID(N'tunnel.Zone'))
 BEGIN
-    CREATE INDEX IX_Zone_tube ON tunnel.Zone(tube_id);
-END;
+    CREATE INDEX IX_Zone_tube ON tunnel.Zone(tube_id)
+END
 
 
 /* LOCATION
@@ -324,18 +284,18 @@ BEGIN
         CONSTRAINT FK_Location_Zone FOREIGN KEY (zone_id) REFERENCES tunnel.Zone(zone_id),
         CONSTRAINT CK_Location_type CHECK (location_type IN ('PORTAL','SEGMENT','LANE_POINT','TECH_ROOM','CROSS_PASSAGE','EMERGENCY_EXIT','SOS_POST','CAMERA_POLE','OTHER')),
         CONSTRAINT CK_Location_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Location_tunnel' AND object_id = OBJECT_ID(N'tunnel.Location'))
 BEGIN
-    CREATE INDEX IX_Location_tunnel ON tunnel.Location(tunnel_id);
-END;
+    CREATE INDEX IX_Location_tunnel ON tunnel.Location(tunnel_id)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Location_zone' AND object_id = OBJECT_ID(N'tunnel.Location'))
 BEGIN
-    CREATE INDEX IX_Location_zone ON tunnel.Location(zone_id);
-END;
+    CREATE INDEX IX_Location_zone ON tunnel.Location(zone_id)
+END
 
 
 /* ASSETTYPE
@@ -357,13 +317,13 @@ BEGIN
         meta_json NVARCHAR(MAX) NULL,
         CONSTRAINT CK_AssetType_category CHECK (category IN ('CCTV','DAI','SCADA_IO','VENTILATION','LIGHTING','PMV','SEMAPHORE','SOS','FIRE_DETECTION','CO_NOX','OPACITY','PA_SYSTEM','RADIO_REBROADCAST','POWER_SUPPLY','DRAINAGE','STRUCTURAL_SENSOR','OTHER')),
         CONSTRAINT CK_AssetType_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_AssetType_cat_name' AND object_id = OBJECT_ID(N'tunnel.AssetType'))
 BEGIN
-    CREATE UNIQUE INDEX UX_AssetType_cat_name ON tunnel.AssetType(category, name);
-END;
+    CREATE UNIQUE INDEX UX_AssetType_cat_name ON tunnel.AssetType(category, name)
+END
 
 
 /* CONTROLSYSTEM
@@ -390,18 +350,18 @@ BEGIN
         CONSTRAINT FK_ControlSystem_Facility FOREIGN KEY (facility_id) REFERENCES tunnel.Facility(facility_id),
         CONSTRAINT CK_ControlSystem_type CHECK (system_type IN ('SCADA','VMS_CCTV','DAI','ATMS','BMS','OTHER')),
         CONSTRAINT CK_ControlSystem_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_ControlSystem_facility_name' AND object_id = OBJECT_ID(N'tunnel.ControlSystem'))
 BEGIN
-    CREATE UNIQUE INDEX UX_ControlSystem_facility_name ON tunnel.ControlSystem(facility_id, name);
-END;
+    CREATE UNIQUE INDEX UX_ControlSystem_facility_name ON tunnel.ControlSystem(facility_id, name)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ControlSystem_facility' AND object_id = OBJECT_ID(N'tunnel.ControlSystem'))
 BEGIN
-    CREATE INDEX IX_ControlSystem_facility ON tunnel.ControlSystem(facility_id);
-END;
+    CREATE INDEX IX_ControlSystem_facility ON tunnel.ControlSystem(facility_id)
+END
 
 
 /* ASSET
@@ -438,23 +398,23 @@ BEGIN
         CONSTRAINT CK_Asset_criticality CHECK (criticality IN ('LOW','MEDIUM','HIGH','SAFETY_CRITICAL')),
         CONSTRAINT CK_Asset_status CHECK (asset_status IN ('OK','DEGRADED','FAILED','MAINTENANCE')),
         CONSTRAINT CK_Asset_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_Asset_asset_tag' AND object_id = OBJECT_ID(N'tunnel.Asset'))
 BEGIN
-    CREATE UNIQUE INDEX UX_Asset_asset_tag ON tunnel.Asset(asset_tag);
-END;
+    CREATE UNIQUE INDEX UX_Asset_asset_tag ON tunnel.Asset(asset_tag)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Asset_type' AND object_id = OBJECT_ID(N'tunnel.Asset'))
 BEGIN
-    CREATE INDEX IX_Asset_type ON tunnel.Asset(asset_type_id);
-END;
+    CREATE INDEX IX_Asset_type ON tunnel.Asset(asset_type_id)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Asset_controlsystem' AND object_id = OBJECT_ID(N'tunnel.Asset'))
 BEGIN
-    CREATE INDEX IX_Asset_controlsystem ON tunnel.Asset(control_system_id);
-END;
+    CREATE INDEX IX_Asset_controlsystem ON tunnel.Asset(control_system_id)
+END
 
 
 /* ASSETINSTALLATION
@@ -489,23 +449,23 @@ BEGIN
         CONSTRAINT FK_AssetInstallation_Tube FOREIGN KEY (tube_id) REFERENCES tunnel.Tube(tube_id),
         CONSTRAINT CK_AssetInstallation_coverage CHECK (coverage_start_chainage_m IS NULL OR coverage_end_chainage_m IS NULL OR coverage_start_chainage_m <= coverage_end_chainage_m),
         CONSTRAINT CK_AssetInstallation_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_AssetInstallation_asset' AND object_id = OBJECT_ID(N'tunnel.AssetInstallation'))
 BEGIN
-    CREATE INDEX IX_AssetInstallation_asset ON tunnel.AssetInstallation(asset_id);
-END;
+    CREATE INDEX IX_AssetInstallation_asset ON tunnel.AssetInstallation(asset_id)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_AssetInstallation_location' AND object_id = OBJECT_ID(N'tunnel.AssetInstallation'))
 BEGIN
-    CREATE INDEX IX_AssetInstallation_location ON tunnel.AssetInstallation(location_id);
-END;
+    CREATE INDEX IX_AssetInstallation_location ON tunnel.AssetInstallation(location_id)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_AssetInstallation_tube' AND object_id = OBJECT_ID(N'tunnel.AssetInstallation'))
 BEGIN
-    CREATE INDEX IX_AssetInstallation_tube ON tunnel.AssetInstallation(tube_id);
-END;
+    CREATE INDEX IX_AssetInstallation_tube ON tunnel.AssetInstallation(tube_id)
+END
 
 
 /* PLAN
@@ -531,18 +491,18 @@ BEGIN
         CONSTRAINT FK_Plan_Facility FOREIGN KEY (facility_id) REFERENCES tunnel.Facility(facility_id),
         CONSTRAINT CK_Plan_type CHECK (plan_type IN ('PAU','EMERGENCY_PLAN','OPERATIONS_PROTOCOLS')),
         CONSTRAINT CK_Plan_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_Plan_facility_name' AND object_id = OBJECT_ID(N'tunnel.Plan'))
 BEGIN
-    CREATE UNIQUE INDEX UX_Plan_facility_name ON tunnel.[Plan](facility_id, name);
-END;
+    CREATE UNIQUE INDEX UX_Plan_facility_name ON tunnel.[Plan](facility_id, name)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Plan_facility' AND object_id = OBJECT_ID(N'tunnel.Plan'))
 BEGIN
-    CREATE INDEX IX_Plan_facility ON tunnel.[Plan](facility_id);
-END;
+    CREATE INDEX IX_Plan_facility ON tunnel.[Plan](facility_id)
+END
 
 
 /* PLANVERSION
@@ -576,18 +536,18 @@ BEGIN
         CONSTRAINT CK_PlanVersion_status CHECK (version_status IN ('DRAFT','ACTIVE','RETIRED')),
         CONSTRAINT CK_PlanVersion_dates CHECK (effective_from IS NULL OR effective_to IS NULL OR effective_from <= effective_to),
         CONSTRAINT CK_PlanVersion_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_PlanVersion_plan_version' AND object_id = OBJECT_ID(N'tunnel.PlanVersion'))
 BEGIN
-    CREATE UNIQUE INDEX UX_PlanVersion_plan_version ON tunnel.PlanVersion(plan_id, version_label);
-END;
+    CREATE UNIQUE INDEX UX_PlanVersion_plan_version ON tunnel.PlanVersion(plan_id, version_label)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_PlanVersion_plan' AND object_id = OBJECT_ID(N'tunnel.PlanVersion'))
 BEGIN
-    CREATE INDEX IX_PlanVersion_plan ON tunnel.PlanVersion(plan_id);
-END;
+    CREATE INDEX IX_PlanVersion_plan ON tunnel.PlanVersion(plan_id)
+END
 
 
 /* PLANTUNNELSCOPE
@@ -611,18 +571,18 @@ BEGIN
         CONSTRAINT FK_PlanTunnelScope_PlanVersion FOREIGN KEY (plan_version_id) REFERENCES tunnel.PlanVersion(plan_version_id),
         CONSTRAINT FK_PlanTunnelScope_Tunnel FOREIGN KEY (tunnel_id) REFERENCES tunnel.Tunnel(tunnel_id),
         CONSTRAINT CK_PlanTunnelScope_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_PlanTunnelScope_unique' AND object_id = OBJECT_ID(N'tunnel.PlanTunnelScope'))
 BEGIN
-    CREATE UNIQUE INDEX UX_PlanTunnelScope_unique ON tunnel.PlanTunnelScope(plan_version_id, tunnel_id);
-END;
+    CREATE UNIQUE INDEX UX_PlanTunnelScope_unique ON tunnel.PlanTunnelScope(plan_version_id, tunnel_id)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_PlanTunnelScope_tunnel' AND object_id = OBJECT_ID(N'tunnel.PlanTunnelScope'))
 BEGIN
-    CREATE INDEX IX_PlanTunnelScope_tunnel ON tunnel.PlanTunnelScope(tunnel_id);
-END;
+    CREATE INDEX IX_PlanTunnelScope_tunnel ON tunnel.PlanTunnelScope(tunnel_id)
+END
 
 
 /* CODESCHEME
@@ -643,13 +603,13 @@ BEGIN
         -- meta_json: Datos adicionales flexibles en JSON.
         meta_json NVARCHAR(MAX) NULL,
         CONSTRAINT CK_CodeScheme_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_CodeScheme_name' AND object_id = OBJECT_ID(N'tunnel.CodeScheme'))
 BEGIN
-    CREATE UNIQUE INDEX UX_CodeScheme_name ON tunnel.CodeScheme(name);
-END;
+    CREATE UNIQUE INDEX UX_CodeScheme_name ON tunnel.CodeScheme(name)
+END
 
 
 /* EMERGENCYLEVEL
@@ -666,18 +626,18 @@ BEGIN
         rank INT NOT NULL,
         -- description: Descripción operativa del nivel.
         description NVARCHAR(400) NULL
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_EmergencyLevel_rank' AND object_id = OBJECT_ID(N'tunnel.EmergencyLevel'))
 BEGIN
-    CREATE UNIQUE INDEX UX_EmergencyLevel_rank ON tunnel.EmergencyLevel(rank);
-END;
+    CREATE UNIQUE INDEX UX_EmergencyLevel_rank ON tunnel.EmergencyLevel(rank)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_EmergencyLevel_name' AND object_id = OBJECT_ID(N'tunnel.EmergencyLevel'))
 BEGIN
-    CREATE UNIQUE INDEX UX_EmergencyLevel_name ON tunnel.EmergencyLevel(name);
-END;
+    CREATE UNIQUE INDEX UX_EmergencyLevel_name ON tunnel.EmergencyLevel(name)
+END
 
 
 /* INCIDENTFAMILY
@@ -694,13 +654,13 @@ BEGIN
         name NVARCHAR(120) NOT NULL,
         -- description: Descripción de los incidentes incluidos en la familia.
         description NVARCHAR(400) NULL
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_IncidentFamily_code' AND object_id = OBJECT_ID(N'tunnel.IncidentFamily'))
 BEGIN
-    CREATE UNIQUE INDEX UX_IncidentFamily_code ON tunnel.IncidentFamily(code);
-END;
+    CREATE UNIQUE INDEX UX_IncidentFamily_code ON tunnel.IncidentFamily(code)
+END
 
 
 /* INCIDENTTYPE
@@ -738,23 +698,23 @@ BEGIN
         CONSTRAINT CK_IncidentType_context CHECK (operational_context IN ('NORMAL','WORKS','EVENT','OTHER')),
         CONSTRAINT CK_IncidentType_info_json CHECK (info_to_collect_json IS NULL OR ISJSON(info_to_collect_json) = 1),
         CONSTRAINT CK_IncidentType_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_IncidentType_scheme_code' AND object_id = OBJECT_ID(N'tunnel.IncidentType'))
 BEGIN
-    CREATE UNIQUE INDEX UX_IncidentType_scheme_code ON tunnel.IncidentType(code_scheme_id, code_raw);
-END;
+    CREATE UNIQUE INDEX UX_IncidentType_scheme_code ON tunnel.IncidentType(code_scheme_id, code_raw)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_IncidentType_level' AND object_id = OBJECT_ID(N'tunnel.IncidentType'))
 BEGIN
-    CREATE INDEX IX_IncidentType_level ON tunnel.IncidentType(emergency_level_id);
-END;
+    CREATE INDEX IX_IncidentType_level ON tunnel.IncidentType(emergency_level_id)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_IncidentType_family' AND object_id = OBJECT_ID(N'tunnel.IncidentType'))
 BEGIN
-    CREATE INDEX IX_IncidentType_family ON tunnel.IncidentType(incident_family_id);
-END;
+    CREATE INDEX IX_IncidentType_family ON tunnel.IncidentType(incident_family_id)
+END
 
 
 /* PROTOCOL
@@ -784,23 +744,23 @@ BEGIN
         CONSTRAINT FK_Protocol_IncidentType FOREIGN KEY (incident_type_id) REFERENCES tunnel.IncidentType(incident_type_id),
         CONSTRAINT CK_Protocol_status CHECK (protocol_status IN ('ACTIVE','RETIRED','DRAFT')),
         CONSTRAINT CK_Protocol_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_Protocol_unique' AND object_id = OBJECT_ID(N'tunnel.Protocol'))
 BEGIN
-    CREATE UNIQUE INDEX UX_Protocol_unique ON tunnel.Protocol(plan_version_id, incident_type_id);
-END;
+    CREATE UNIQUE INDEX UX_Protocol_unique ON tunnel.Protocol(plan_version_id, incident_type_id)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Protocol_planversion' AND object_id = OBJECT_ID(N'tunnel.Protocol'))
 BEGIN
-    CREATE INDEX IX_Protocol_planversion ON tunnel.Protocol(plan_version_id);
-END;
+    CREATE INDEX IX_Protocol_planversion ON tunnel.Protocol(plan_version_id)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Protocol_incidenttype' AND object_id = OBJECT_ID(N'tunnel.Protocol'))
 BEGIN
-    CREATE INDEX IX_Protocol_incidenttype ON tunnel.Protocol(incident_type_id);
-END;
+    CREATE INDEX IX_Protocol_incidenttype ON tunnel.Protocol(incident_type_id)
+END
 
 
 /* PROTOCOLSTEP
@@ -834,18 +794,18 @@ BEGIN
         CONSTRAINT CK_ProtocolStep_ui_json CHECK (ui_form_schema_json IS NULL OR ISJSON(ui_form_schema_json) = 1),
         CONSTRAINT CK_ProtocolStep_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1),
         CONSTRAINT UQ_ProtocolStep_id_protocol UNIQUE (protocol_step_id, protocol_id)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_ProtocolStep_protocol_stepkey' AND object_id = OBJECT_ID(N'tunnel.ProtocolStep'))
 BEGIN
-    CREATE UNIQUE INDEX UX_ProtocolStep_protocol_stepkey ON tunnel.ProtocolStep(protocol_id, step_key);
-END;
+    CREATE UNIQUE INDEX UX_ProtocolStep_protocol_stepkey ON tunnel.ProtocolStep(protocol_id, step_key)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ProtocolStep_protocol' AND object_id = OBJECT_ID(N'tunnel.ProtocolStep'))
 BEGIN
-    CREATE INDEX IX_ProtocolStep_protocol ON tunnel.ProtocolStep(protocol_id);
-END;
+    CREATE INDEX IX_ProtocolStep_protocol ON tunnel.ProtocolStep(protocol_id)
+END
 
 
 /* STEPTRANSITION
@@ -877,13 +837,13 @@ BEGIN
         CONSTRAINT FK_StepTransition_ToStep FOREIGN KEY (to_step_id, protocol_id) REFERENCES tunnel.ProtocolStep(protocol_step_id, protocol_id),
         CONSTRAINT CK_StepTransition_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1),
         CONSTRAINT CK_StepTransition_not_self CHECK (from_step_id <> to_step_id)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_StepTransition_protocol_from' AND object_id = OBJECT_ID(N'tunnel.StepTransition'))
 BEGIN
-    CREATE INDEX IX_StepTransition_protocol_from ON tunnel.StepTransition(protocol_id, from_step_id);
-END;
+    CREATE INDEX IX_StepTransition_protocol_from ON tunnel.StepTransition(protocol_id, from_step_id)
+END
 
 
 /* ACTIONDEFINITION
@@ -909,13 +869,13 @@ BEGIN
         CONSTRAINT CK_ActionDefinition_type CHECK (action_type IN ('SET_SIGNAGE','SET_SEMAPHORE','CLOSE_TUBE','VENTILATION_MODE','LIGHTING_MODE','PA_ANNOUNCEMENT','CREATE_WORK_ORDER','REQUEST_EXTERNAL','LOG_ONLY','OTHER')),
         CONSTRAINT CK_ActionDefinition_payload_json CHECK (payload_schema_json IS NULL OR ISJSON(payload_schema_json) = 1),
         CONSTRAINT CK_ActionDefinition_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_ActionDefinition_name' AND object_id = OBJECT_ID(N'tunnel.ActionDefinition'))
 BEGIN
-    CREATE UNIQUE INDEX UX_ActionDefinition_name ON tunnel.ActionDefinition(name);
-END;
+    CREATE UNIQUE INDEX UX_ActionDefinition_name ON tunnel.ActionDefinition(name)
+END
 
 
 /* STEPACTION
@@ -944,18 +904,18 @@ BEGIN
         CONSTRAINT FK_StepAction_ActionDefinition FOREIGN KEY (action_definition_id) REFERENCES tunnel.ActionDefinition(action_definition_id),
         CONSTRAINT CK_StepAction_binding_json CHECK (parameter_binding_json IS NULL OR ISJSON(parameter_binding_json) = 1),
         CONSTRAINT CK_StepAction_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_StepAction_unique' AND object_id = OBJECT_ID(N'tunnel.StepAction'))
 BEGIN
-    CREATE UNIQUE INDEX UX_StepAction_unique ON tunnel.StepAction(protocol_step_id, action_definition_id);
-END;
+    CREATE UNIQUE INDEX UX_StepAction_unique ON tunnel.StepAction(protocol_step_id, action_definition_id)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_StepAction_step' AND object_id = OBJECT_ID(N'tunnel.StepAction'))
 BEGIN
-    CREATE INDEX IX_StepAction_step ON tunnel.StepAction(protocol_step_id);
-END;
+    CREATE INDEX IX_StepAction_step ON tunnel.StepAction(protocol_step_id)
+END
 
 
 /* NOTIFICATIONRULE
@@ -978,13 +938,13 @@ BEGIN
         meta_json NVARCHAR(MAX) NULL,
         CONSTRAINT CK_NotificationRule_channel CHECK (default_channel IN ('PHONE','EMAIL','RADIO','API','SMS','OTHER')),
         CONSTRAINT CK_NotificationRule_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_NotificationRule_name' AND object_id = OBJECT_ID(N'tunnel.NotificationRule'))
 BEGIN
-    CREATE UNIQUE INDEX UX_NotificationRule_name ON tunnel.NotificationRule(name);
-END;
+    CREATE UNIQUE INDEX UX_NotificationRule_name ON tunnel.NotificationRule(name)
+END
 
 
 /* STEPNOTIFICATION
@@ -1010,13 +970,13 @@ BEGIN
         CONSTRAINT FK_StepNotification_NotificationRule FOREIGN KEY (notification_rule_id) REFERENCES tunnel.NotificationRule(notification_rule_id),
         CONSTRAINT CK_StepNotification_when CHECK ([when] IN ('ON_ENTER','ON_EXIT','ON_TIMEOUT','ON_CONDITION')),
         CONSTRAINT CK_StepNotification_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_StepNotification_unique' AND object_id = OBJECT_ID(N'tunnel.StepNotification'))
 BEGIN
-    CREATE UNIQUE INDEX UX_StepNotification_unique ON tunnel.StepNotification(protocol_step_id, notification_rule_id, [when]);
-END;
+    CREATE UNIQUE INDEX UX_StepNotification_unique ON tunnel.StepNotification(protocol_step_id, notification_rule_id, [when])
+END
 
 
 /* PARAMETERDEFINITION
@@ -1040,13 +1000,13 @@ BEGIN
         meta_json NVARCHAR(MAX) NULL,
         CONSTRAINT CK_ParameterDefinition_type CHECK (data_type IN ('INT','DECIMAL','BOOLEAN','TEXT','JSON')),
         CONSTRAINT CK_ParameterDefinition_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_ParameterDefinition_key' AND object_id = OBJECT_ID(N'tunnel.ParameterDefinition'))
 BEGIN
-    CREATE UNIQUE INDEX UX_ParameterDefinition_key ON tunnel.ParameterDefinition([key]);
-END;
+    CREATE UNIQUE INDEX UX_ParameterDefinition_key ON tunnel.ParameterDefinition([key])
+END
 
 
 /* PARAMETERSET
@@ -1074,18 +1034,18 @@ BEGIN
         CONSTRAINT FK_ParameterSet_PlanVersion FOREIGN KEY (plan_version_id) REFERENCES tunnel.PlanVersion(plan_version_id),
         CONSTRAINT CK_ParameterSet_owner CHECK ((CASE WHEN tunnel_id IS NULL THEN 0 ELSE 1 END) + (CASE WHEN plan_version_id IS NULL THEN 0 ELSE 1 END) = 1),
         CONSTRAINT CK_ParameterSet_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ParameterSet_tunnel' AND object_id = OBJECT_ID(N'tunnel.ParameterSet'))
 BEGIN
-    CREATE INDEX IX_ParameterSet_tunnel ON tunnel.ParameterSet(tunnel_id);
-END;
+    CREATE INDEX IX_ParameterSet_tunnel ON tunnel.ParameterSet(tunnel_id)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ParameterSet_planversion' AND object_id = OBJECT_ID(N'tunnel.ParameterSet'))
 BEGIN
-    CREATE INDEX IX_ParameterSet_planversion ON tunnel.ParameterSet(plan_version_id);
-END;
+    CREATE INDEX IX_ParameterSet_planversion ON tunnel.ParameterSet(plan_version_id)
+END
 
 
 /* PARAMETERVALUE
@@ -1117,13 +1077,13 @@ BEGIN
         CONSTRAINT FK_ParameterValue_ParameterDefinition FOREIGN KEY (parameter_definition_id) REFERENCES tunnel.ParameterDefinition(parameter_definition_id),
         CONSTRAINT CK_ParameterValue_value_json CHECK (value_json IS NULL OR ISJSON(value_json) = 1),
         CONSTRAINT CK_ParameterValue_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_ParameterValue_unique' AND object_id = OBJECT_ID(N'tunnel.ParameterValue'))
 BEGIN
-    CREATE UNIQUE INDEX UX_ParameterValue_unique ON tunnel.ParameterValue(parameter_set_id, parameter_definition_id);
-END;
+    CREATE UNIQUE INDEX UX_ParameterValue_unique ON tunnel.ParameterValue(parameter_set_id, parameter_definition_id)
+END
 
 
 /* PROTOCOLPARAMETER
@@ -1143,13 +1103,13 @@ BEGIN
         usage_note NVARCHAR(400) NULL,
         CONSTRAINT FK_ProtocolParameter_Protocol FOREIGN KEY (protocol_id) REFERENCES tunnel.Protocol(protocol_id),
         CONSTRAINT FK_ProtocolParameter_ParameterDefinition FOREIGN KEY (parameter_definition_id) REFERENCES tunnel.ParameterDefinition(parameter_definition_id)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_ProtocolParameter_unique' AND object_id = OBJECT_ID(N'tunnel.ProtocolParameter'))
 BEGIN
-    CREATE UNIQUE INDEX UX_ProtocolParameter_unique ON tunnel.ProtocolParameter(protocol_id, parameter_definition_id);
-END;
+    CREATE UNIQUE INDEX UX_ProtocolParameter_unique ON tunnel.ProtocolParameter(protocol_id, parameter_definition_id)
+END
 
 
 /* ROLE
@@ -1168,13 +1128,13 @@ BEGIN
         -- meta_json: Datos adicionales flexibles en JSON.
         meta_json NVARCHAR(MAX) NULL,
         CONSTRAINT CK_Role_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_Role_name' AND object_id = OBJECT_ID(N'tunnel.Role'))
 BEGIN
-    CREATE UNIQUE INDEX UX_Role_name ON tunnel.[Role](name);
-END;
+    CREATE UNIQUE INDEX UX_Role_name ON tunnel.[Role](name)
+END
 
 
 /* USERACCOUNT
@@ -1207,18 +1167,18 @@ BEGIN
         CONSTRAINT FK_UserAccount_Facility FOREIGN KEY (facility_id) REFERENCES tunnel.Facility(facility_id),
         CONSTRAINT FK_UserAccount_Role FOREIGN KEY (role_id) REFERENCES tunnel.[Role](role_id),
         CONSTRAINT CK_UserAccount_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_UserAccount_facility_username' AND object_id = OBJECT_ID(N'tunnel.UserAccount'))
 BEGIN
-    CREATE UNIQUE INDEX UX_UserAccount_facility_username ON tunnel.UserAccount(facility_id, username);
-END;
+    CREATE UNIQUE INDEX UX_UserAccount_facility_username ON tunnel.UserAccount(facility_id, username)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_UserAccount_role' AND object_id = OBJECT_ID(N'tunnel.UserAccount'))
 BEGIN
-    CREATE INDEX IX_UserAccount_role ON tunnel.UserAccount(role_id);
-END;
+    CREATE INDEX IX_UserAccount_role ON tunnel.UserAccount(role_id)
+END
 
 
 /* AGENCY
@@ -1239,13 +1199,13 @@ BEGIN
         meta_json NVARCHAR(MAX) NULL,
         CONSTRAINT CK_Agency_type CHECK (agency_type IN ('EMERGENCY_SERVICES','TRAFFIC_AUTHORITY','CONTROL_CENTER','MAINTENANCE','OTHER')),
         CONSTRAINT CK_Agency_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_Agency_name' AND object_id = OBJECT_ID(N'tunnel.Agency'))
 BEGIN
-    CREATE UNIQUE INDEX UX_Agency_name ON tunnel.Agency(name);
-END;
+    CREATE UNIQUE INDEX UX_Agency_name ON tunnel.Agency(name)
+END
 
 
 /* CONTACTPOINT
@@ -1271,18 +1231,18 @@ BEGIN
         CONSTRAINT FK_ContactPoint_Agency FOREIGN KEY (agency_id) REFERENCES tunnel.Agency(agency_id),
         CONSTRAINT CK_ContactPoint_channel CHECK (channel IN ('PHONE','EMAIL','RADIO','API','SMS','OTHER')),
         CONSTRAINT CK_ContactPoint_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_ContactPoint_unique' AND object_id = OBJECT_ID(N'tunnel.ContactPoint'))
 BEGIN
-    CREATE UNIQUE INDEX UX_ContactPoint_unique ON tunnel.ContactPoint(agency_id, channel, [address]);
-END;
+    CREATE UNIQUE INDEX UX_ContactPoint_unique ON tunnel.ContactPoint(agency_id, channel, [address])
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ContactPoint_agency' AND object_id = OBJECT_ID(N'tunnel.ContactPoint'))
 BEGIN
-    CREATE INDEX IX_ContactPoint_agency ON tunnel.ContactPoint(agency_id);
-END;
+    CREATE INDEX IX_ContactPoint_agency ON tunnel.ContactPoint(agency_id)
+END
 
 
 /* INCIDENTEVENT
@@ -1319,18 +1279,18 @@ BEGIN
         CONSTRAINT CK_IncidentEvent_status CHECK (incident_status IN ('OPEN','MITIGATING','RESOLVED','CLOSED')),
         CONSTRAINT CK_IncidentEvent_times CHECK ((detected_at_utc IS NULL OR detected_at_utc >= started_at_utc) AND (resolved_at_utc IS NULL OR resolved_at_utc >= started_at_utc)),
         CONSTRAINT CK_IncidentEvent_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_IncidentEvent_tunnel' AND object_id = OBJECT_ID(N'tunnel.IncidentEvent'))
 BEGIN
-    CREATE INDEX IX_IncidentEvent_tunnel ON tunnel.IncidentEvent(tunnel_id, started_at_utc);
-END;
+    CREATE INDEX IX_IncidentEvent_tunnel ON tunnel.IncidentEvent(tunnel_id, started_at_utc)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_IncidentEvent_type' AND object_id = OBJECT_ID(N'tunnel.IncidentEvent'))
 BEGIN
-    CREATE INDEX IX_IncidentEvent_type ON tunnel.IncidentEvent(incident_type_id);
-END;
+    CREATE INDEX IX_IncidentEvent_type ON tunnel.IncidentEvent(incident_type_id)
+END
 
 
 /* DETECTIONEVENT
@@ -1359,18 +1319,18 @@ BEGIN
         CONSTRAINT FK_DetectionEvent_Asset FOREIGN KEY (source_asset_id) REFERENCES tunnel.Asset(asset_id),
         CONSTRAINT CK_DetectionEvent_source CHECK (source_type IN ('SENSOR','CCTV_DAI','SCADA_ALARM','SOS_CALL','EXTERNAL_CALL','OPERATOR_OBS')),
         CONSTRAINT CK_DetectionEvent_payload_json CHECK (payload_json IS NULL OR ISJSON(payload_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_DetectionEvent_incident' AND object_id = OBJECT_ID(N'tunnel.DetectionEvent'))
 BEGIN
-    CREATE INDEX IX_DetectionEvent_incident ON tunnel.DetectionEvent(incident_event_id, created_at_utc);
-END;
+    CREATE INDEX IX_DetectionEvent_incident ON tunnel.DetectionEvent(incident_event_id, created_at_utc)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_DetectionEvent_asset' AND object_id = OBJECT_ID(N'tunnel.DetectionEvent'))
 BEGIN
-    CREATE INDEX IX_DetectionEvent_asset ON tunnel.DetectionEvent(source_asset_id);
-END;
+    CREATE INDEX IX_DetectionEvent_asset ON tunnel.DetectionEvent(source_asset_id)
+END
 
 
 /* INCIDENTLOCATION
@@ -1396,18 +1356,18 @@ BEGIN
         CONSTRAINT FK_IncidentLocation_Location FOREIGN KEY (location_id) REFERENCES tunnel.Location(location_id),
         CONSTRAINT CK_IncidentLocation_conf CHECK (confidence >= 0 AND confidence <= 1),
         CONSTRAINT CK_IncidentLocation_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_IncidentLocation_unique' AND object_id = OBJECT_ID(N'tunnel.IncidentLocation'))
 BEGIN
-    CREATE UNIQUE INDEX UX_IncidentLocation_unique ON tunnel.IncidentLocation(incident_event_id, location_id);
-END;
+    CREATE UNIQUE INDEX UX_IncidentLocation_unique ON tunnel.IncidentLocation(incident_event_id, location_id)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_IncidentLocation_incident' AND object_id = OBJECT_ID(N'tunnel.IncidentLocation'))
 BEGIN
-    CREATE INDEX IX_IncidentLocation_incident ON tunnel.IncidentLocation(incident_event_id);
-END;
+    CREATE INDEX IX_IncidentLocation_incident ON tunnel.IncidentLocation(incident_event_id)
+END
 
 
 /* PROTOCOLRUN
@@ -1444,18 +1404,18 @@ BEGIN
         CONSTRAINT CK_ProtocolRun_status CHECK (run_status IN ('RUNNING','PAUSED','COMPLETED','ABORTED')),
         CONSTRAINT CK_ProtocolRun_context_json CHECK (context_snapshot_json IS NULL OR ISJSON(context_snapshot_json) = 1),
         CONSTRAINT CK_ProtocolRun_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ProtocolRun_incident' AND object_id = OBJECT_ID(N'tunnel.ProtocolRun'))
 BEGIN
-    CREATE INDEX IX_ProtocolRun_incident ON tunnel.ProtocolRun(incident_event_id, started_at_utc);
-END;
+    CREATE INDEX IX_ProtocolRun_incident ON tunnel.ProtocolRun(incident_event_id, started_at_utc)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ProtocolRun_protocol' AND object_id = OBJECT_ID(N'tunnel.ProtocolRun'))
 BEGIN
-    CREATE INDEX IX_ProtocolRun_protocol ON tunnel.ProtocolRun(protocol_id);
-END;
+    CREATE INDEX IX_ProtocolRun_protocol ON tunnel.ProtocolRun(protocol_id)
+END
 
 
 /* ACTIONEXECUTION
@@ -1490,18 +1450,18 @@ BEGIN
         CONSTRAINT CK_ActionExecution_status CHECK (exec_status IN ('REQUESTED','SENT','SUCCESS','FAILED','CANCELLED')),
         CONSTRAINT CK_ActionExecution_payload_json CHECK (ISJSON(payload_json) = 1),
         CONSTRAINT CK_ActionExecution_result_json CHECK (result_json IS NULL OR ISJSON(result_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ActionExecution_run' AND object_id = OBJECT_ID(N'tunnel.ActionExecution'))
 BEGIN
-    CREATE INDEX IX_ActionExecution_run ON tunnel.ActionExecution(protocol_run_id, requested_at_utc);
-END;
+    CREATE INDEX IX_ActionExecution_run ON tunnel.ActionExecution(protocol_run_id, requested_at_utc)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_ActionExecution_step' AND object_id = OBJECT_ID(N'tunnel.ActionExecution'))
 BEGIN
-    CREATE INDEX IX_ActionExecution_step ON tunnel.ActionExecution(step_id);
-END;
+    CREATE INDEX IX_ActionExecution_step ON tunnel.ActionExecution(step_id)
+END
 
 
 /* ACTIONTARGET
@@ -1525,13 +1485,13 @@ BEGIN
         CONSTRAINT FK_ActionTarget_ActionExecution FOREIGN KEY (action_execution_id) REFERENCES tunnel.ActionExecution(action_execution_id),
         CONSTRAINT FK_ActionTarget_Asset FOREIGN KEY (asset_id) REFERENCES tunnel.Asset(asset_id),
         CONSTRAINT CK_ActionTarget_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_ActionTarget_unique' AND object_id = OBJECT_ID(N'tunnel.ActionTarget'))
 BEGIN
-    CREATE UNIQUE INDEX UX_ActionTarget_unique ON tunnel.ActionTarget(action_execution_id, asset_id);
-END;
+    CREATE UNIQUE INDEX UX_ActionTarget_unique ON tunnel.ActionTarget(action_execution_id, asset_id)
+END
 
 
 /* NOTIFICATION
@@ -1563,18 +1523,18 @@ BEGIN
         CONSTRAINT FK_Notification_Rule FOREIGN KEY (notification_rule_id) REFERENCES tunnel.NotificationRule(notification_rule_id),
         CONSTRAINT CK_Notification_status CHECK (notif_status IN ('PENDING','SENT','FAILED','ACKED')),
         CONSTRAINT CK_Notification_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Notification_run' AND object_id = OBJECT_ID(N'tunnel.Notification'))
 BEGIN
-    CREATE INDEX IX_Notification_run ON tunnel.Notification(protocol_run_id);
-END;
+    CREATE INDEX IX_Notification_run ON tunnel.Notification(protocol_run_id)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Notification_contact' AND object_id = OBJECT_ID(N'tunnel.Notification'))
 BEGIN
-    CREATE INDEX IX_Notification_contact ON tunnel.Notification(contact_point_id);
-END;
+    CREATE INDEX IX_Notification_contact ON tunnel.Notification(contact_point_id)
+END
 
 
 /* WORKORDER
@@ -1607,18 +1567,18 @@ BEGIN
         CONSTRAINT CK_WorkOrder_priority CHECK (priority IN ('LOW','MEDIUM','HIGH','URGENT')),
         CONSTRAINT CK_WorkOrder_status CHECK (work_status IN ('OPEN','IN_PROGRESS','DONE','CANCELLED')),
         CONSTRAINT CK_WorkOrder_meta_json CHECK (meta_json IS NULL OR ISJSON(meta_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_WorkOrder_asset' AND object_id = OBJECT_ID(N'tunnel.WorkOrder'))
 BEGIN
-    CREATE INDEX IX_WorkOrder_asset ON tunnel.WorkOrder(asset_id, created_at_utc);
-END;
+    CREATE INDEX IX_WorkOrder_asset ON tunnel.WorkOrder(asset_id, created_at_utc)
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_WorkOrder_incident' AND object_id = OBJECT_ID(N'tunnel.WorkOrder'))
 BEGIN
-    CREATE INDEX IX_WorkOrder_incident ON tunnel.WorkOrder(created_from_incident_id);
-END;
+    CREATE INDEX IX_WorkOrder_incident ON tunnel.WorkOrder(created_from_incident_id)
+END
 
 
 /* AUDITLOG
@@ -1647,18 +1607,18 @@ BEGIN
         CONSTRAINT FK_AuditLog_User FOREIGN KEY (user_id) REFERENCES tunnel.UserAccount(user_id),
         CONSTRAINT FK_AuditLog_Incident FOREIGN KEY (incident_event_id) REFERENCES tunnel.IncidentEvent(incident_event_id),
         CONSTRAINT CK_AuditLog_details_json CHECK (details_json IS NULL OR ISJSON(details_json) = 1)
-    );
-END;
+    )
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_AuditLog_incident_ts' AND object_id = OBJECT_ID(N'tunnel.AuditLog'))
 BEGIN
-    CREATE INDEX IX_AuditLog_incident_ts ON tunnel.AuditLog(incident_event_id, [timestamp_utc]);
-END;
+    CREATE INDEX IX_AuditLog_incident_ts ON tunnel.AuditLog(incident_event_id, [timestamp_utc])
+END
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_AuditLog_entity' AND object_id = OBJECT_ID(N'tunnel.AuditLog'))
 BEGIN
-    CREATE INDEX IX_AuditLog_entity ON tunnel.AuditLog(entity_type, entity_id);
-END;
+    CREATE INDEX IX_AuditLog_entity ON tunnel.AuditLog(entity_type, entity_id)
+END
 
 
 
@@ -1676,550 +1636,398 @@ BEGIN
     ALTER TABLE tunnel.ProtocolRun WITH CHECK
     ADD CONSTRAINT FK_ProtocolRun_CurrentStep
     FOREIGN KEY (current_step_id, protocol_id)
-    REFERENCES tunnel.ProtocolStep(protocol_step_id, protocol_id);
-END;
-
-
+    REFERENCES tunnel.ProtocolStep(protocol_step_id, protocol_id)
+END
 
 -------------------------------------------------------------------------------
--- 6) PROCEDIMIENTO AUXILIAR PARA DOCUMENTAR TABLAS Y COLUMNAS
---    Usa extended properties estándar de SQL Server (MS_Description).
---    Se pueden consultar desde las vistas:
---      tunnel.v_TableDocumentation
---      tunnel.v_ColumnDocumentation
+-- 6) DOCUMENTACIÓN INTERNA CONSULTABLE
+--    Esta tabla funciona como diccionario interno de la base de datos.
+--    Permite consultar desde SQL Server para qué sirve cada tabla y cada columna.
 -------------------------------------------------------------------------------
-IF OBJECT_ID(N'tunnel.usp_SetDescription', N'P') IS NULL
+
+IF OBJECT_ID(N'tunnel.DatabaseDocumentation', N'U') IS NULL
 BEGIN
-    EXEC(N'CREATE PROCEDURE tunnel.usp_SetDescription AS RETURN 0;');
-END;
+    CREATE TABLE tunnel.DatabaseDocumentation (
+        -- documentation_id: Identificador incremental de la entrada documental.
+        documentation_id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_DatabaseDocumentation PRIMARY KEY,
+        -- object_type: Tipo de objeto documentado. Valores: TABLE o COLUMN.
+        object_type NVARCHAR(20) NOT NULL,
+        -- table_name: Nombre de la tabla documentada.
+        table_name NVARCHAR(128) NOT NULL,
+        -- column_name: Nombre de la columna documentada. Es NULL cuando se documenta una tabla completa.
+        column_name NVARCHAR(128) NULL,
+        -- description: Explicación funcional de la tabla o columna.
+        description NVARCHAR(MAX) NOT NULL,
+        -- created_at_utc: Fecha y hora UTC de creación de la entrada documental.
+        created_at_utc DATETIME2(3) NOT NULL CONSTRAINT DF_DatabaseDocumentation_created DEFAULT SYSUTCDATETIME(),
 
-EXEC(N'
-ALTER PROCEDURE tunnel.usp_SetDescription
-    @SchemaName SYSNAME = N''tunnel'',
-    @ObjectName SYSNAME,
-    @ColumnName SYSNAME = NULL,
-    @Description NVARCHAR(4000)
-AS
+        CONSTRAINT CK_DatabaseDocumentation_type CHECK (object_type IN ('TABLE','COLUMN'))
+    )
+END
+
+IF NOT EXISTS (SELECT 1 FROM tunnel.DatabaseDocumentation)
 BEGIN
-    SET NOCOUNT ON;
-
-    DECLARE @ObjectId INT = OBJECT_ID(QUOTENAME(@SchemaName) + N''.'' + QUOTENAME(@ObjectName), N''U'');
-
-    IF @ObjectId IS NULL
-        RETURN;
-
-    IF @ColumnName IS NULL
-    BEGIN
-        IF EXISTS (
-            SELECT 1
-            FROM sys.extended_properties
-            WHERE class = 1
-              AND major_id = @ObjectId
-              AND minor_id = 0
-              AND name = N''MS_Description''
-        )
-        BEGIN
-            EXEC sys.sp_updateextendedproperty
-                @name = N''MS_Description'',
-                @value = @Description,
-                @level0type = N''SCHEMA'', @level0name = @SchemaName,
-                @level1type = N''TABLE'',  @level1name = @ObjectName;
-        END
-        ELSE
-        BEGIN
-            EXEC sys.sp_addextendedproperty
-                @name = N''MS_Description'',
-                @value = @Description,
-                @level0type = N''SCHEMA'', @level0name = @SchemaName,
-                @level1type = N''TABLE'',  @level1name = @ObjectName;
-        END
-    END
-    ELSE
-    BEGIN
-        DECLARE @ColumnId INT = (
-            SELECT column_id
-            FROM sys.columns
-            WHERE object_id = @ObjectId
-              AND name = @ColumnName
-        );
-
-        IF @ColumnId IS NULL
-            RETURN;
-
-        IF EXISTS (
-            SELECT 1
-            FROM sys.extended_properties
-            WHERE class = 1
-              AND major_id = @ObjectId
-              AND minor_id = @ColumnId
-              AND name = N''MS_Description''
-        )
-        BEGIN
-            EXEC sys.sp_updateextendedproperty
-                @name = N''MS_Description'',
-                @value = @Description,
-                @level0type = N''SCHEMA'', @level0name = @SchemaName,
-                @level1type = N''TABLE'',  @level1name = @ObjectName,
-                @level2type = N''COLUMN'', @level2name = @ColumnName;
-        END
-        ELSE
-        BEGIN
-            EXEC sys.sp_addextendedproperty
-                @name = N''MS_Description'',
-                @value = @Description,
-                @level0type = N''SCHEMA'', @level0name = @SchemaName,
-                @level1type = N''TABLE'',  @level1name = @ObjectName,
-                @level2type = N''COLUMN'', @level2name = @ColumnName;
-        END
-    END
-END;
-');
-
-
--------------------------------------------------------------------------------
--- 7) CARGA DE DESCRIPCIONES INTERNAS (MS_Description)
--------------------------------------------------------------------------------
-EXEC tunnel.usp_SetDescription @ObjectName=N'Organization', @Description=N'Organización propietaria, gestora o concesionaria responsable de una o varias instalaciones o redes de túneles.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Organization', @ColumnName=N'organization_id', @Description=N'Identificador técnico único de la organización. Se usa como clave primaria y no debe cambiar.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Organization', @ColumnName=N'name', @Description=N'Nombre oficial o operativo de la organización.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Organization', @ColumnName=N'legal_id', @Description=N'Identificador legal/fiscal si aplica, por ejemplo CIF, NIF o identificador administrativo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Organization', @ColumnName=N'country_code', @Description=N'Código de país ISO-3166 alfa-3, por ejemplo ESP.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Organization', @ColumnName=N'timezone_default', @Description=N'Zona horaria por defecto de la organización o ámbito principal.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Organization', @ColumnName=N'created_at_utc', @Description=N'Fecha y hora UTC de creación del registro.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Organization', @ColumnName=N'meta_json', @Description=N'Campo JSON extensible para datos adicionales no normalizados.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Facility', @Description=N'Ámbito operativo gestionado por una organización: red urbana, concesión, centro de control, autopista o instalación equivalente.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Facility', @ColumnName=N'facility_id', @Description=N'Identificador técnico único del ámbito o instalación.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Facility', @ColumnName=N'organization_id', @Description=N'Organización propietaria o gestora de la instalación.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Facility', @ColumnName=N'name', @Description=N'Nombre operativo de la instalación, red o centro de control.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Facility', @ColumnName=N'facility_type', @Description=N'Tipo de instalación: CITY_NETWORK, HIGHWAY_CONCESSION, SINGLE_TUNNEL o CONTROL_CENTER_SCOPE.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Facility', @ColumnName=N'address', @Description=N'Dirección física o descripción de ubicación si procede.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Facility', @ColumnName=N'timezone', @Description=N'Zona horaria propia del ámbito operativo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Facility', @ColumnName=N'contact_phone', @Description=N'Teléfono general de contacto.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Facility', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Facility', @ColumnName=N'created_at_utc', @Description=N'Fecha y hora UTC de creación del registro.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tunnel', @Description=N'Túnel físico individual. Representa la infraestructura principal y permite vincular tubos, zonas, localizaciones, planes e incidencias.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tunnel', @ColumnName=N'tunnel_id', @Description=N'Identificador técnico único del túnel.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tunnel', @ColumnName=N'facility_id', @Description=N'Ámbito operativo al que pertenece el túnel.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tunnel', @ColumnName=N'name', @Description=N'Nombre oficial u operativo del túnel.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tunnel', @ColumnName=N'local_code', @Description=N'Código interno/local del túnel.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tunnel', @ColumnName=N'road_name', @Description=N'Carretera, ronda, vía o eje viario asociado.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tunnel', @ColumnName=N'country_code', @Description=N'Código de país ISO-3166 alfa-3.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tunnel', @ColumnName=N'city', @Description=N'Ciudad o área territorial.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tunnel', @ColumnName=N'length_m', @Description=N'Longitud aproximada del túnel en metros.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tunnel', @ColumnName=N'has_bidirectional_tubes', @Description=N'Indica si el túnel tiene tubos o sentidos bidireccionales.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tunnel', @ColumnName=N'commissioning_date', @Description=N'Fecha de puesta en servicio.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tunnel', @ColumnName=N'tunnel_status', @Description=N'Estado operativo del túnel: ACTIVE, WORKS o DECOMMISSIONED.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tunnel', @ColumnName=N'meta_json', @Description=N'Datos adicionales como normativa, restricciones, notas geométricas o configuración local.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tunnel', @ColumnName=N'created_at_utc', @Description=N'Fecha y hora UTC de creación del registro.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tube', @Description=N'Tubo, sentido o calzada interna de un túnel. Permite modelar túneles de uno o varios tubos y sentidos de circulación.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tube', @ColumnName=N'tube_id', @Description=N'Identificador técnico único del tubo o sentido.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tube', @ColumnName=N'tunnel_id', @Description=N'Túnel al que pertenece el tubo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tube', @ColumnName=N'name', @Description=N'Nombre del tubo o sentido, por ejemplo Besòs, Llobregat, Ascendente o Descendente.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tube', @ColumnName=N'direction', @Description=N'Dirección normalizada: N, S, E, W, A_TO_B, B_TO_A o BIDIR.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tube', @ColumnName=N'lanes_count', @Description=N'Número de carriles del tubo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tube', @ColumnName=N'speed_limit_kmh', @Description=N'Velocidad máxima autorizada en km/h.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tube', @ColumnName=N'gradient_percent', @Description=N'Pendiente media o relevante expresada en porcentaje.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tube', @ColumnName=N'cross_section_type', @Description=N'Tipo de sección o configuración geométrica.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Tube', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Zone', @Description=N'Sectorización interna de un tubo: zona operativa, compartimento de incendio, zona de evacuación, zona vulnerable o tramo de riesgo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Zone', @ColumnName=N'zone_id', @Description=N'Identificador técnico único de la zona.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Zone', @ColumnName=N'tube_id', @Description=N'Tubo al que pertenece la zona.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Zone', @ColumnName=N'name', @Description=N'Nombre de la zona.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Zone', @ColumnName=N'zone_type', @Description=N'Tipo de zona: OPERATIONAL, FIRE_COMPARTMENT, EVACUATION, RISK o VULNERABLE.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Zone', @ColumnName=N'start_chainage_m', @Description=N'Inicio de la zona en metros de progresiva o referencia lineal.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Zone', @ColumnName=N'end_chainage_m', @Description=N'Fin de la zona en metros de progresiva o referencia lineal.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Zone', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Location', @Description=N'Localización operativa dentro de un túnel: boca, tramo, punto kilométrico, sala técnica, salida de emergencia, poste SOS, cámara u otro punto relevante.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Location', @ColumnName=N'location_id', @Description=N'Identificador técnico único de la localización.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Location', @ColumnName=N'tunnel_id', @Description=N'Túnel al que pertenece la localización.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Location', @ColumnName=N'zone_id', @Description=N'Zona a la que pertenece la localización si aplica.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Location', @ColumnName=N'location_type', @Description=N'Tipo: PORTAL, SEGMENT, LANE_POINT, TECH_ROOM, CROSS_PASSAGE, EMERGENCY_EXIT, SOS_POST, CAMERA_POLE u OTHER.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Location', @ColumnName=N'name', @Description=N'Nombre o etiqueta de la localización.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Location', @ColumnName=N'chainage_m', @Description=N'Progresiva o referencia lineal en metros.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Location', @ColumnName=N'geom', @Description=N'Coordenada geográfica opcional. Normalmente SRID 4326.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Location', @ColumnName=N'access_description', @Description=N'Descripción de acceso para operadores o ayuda externa.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Location', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AssetType', @Description=N'Catálogo de tipos de equipamiento independientes de fabricante: CCTV, DAI, SCADA, ventilación, iluminación, PMV, semáforos, SOS, sensores, etc.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AssetType', @ColumnName=N'asset_type_id', @Description=N'Identificador técnico único del tipo de activo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AssetType', @ColumnName=N'category', @Description=N'Categoría funcional normalizada del activo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AssetType', @ColumnName=N'name', @Description=N'Nombre concreto del tipo de activo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AssetType', @ColumnName=N'vendor_independent', @Description=N'Indica si el tipo es independiente de fabricante.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AssetType', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ControlSystem', @Description=N'Sistema de control o supervisión que gobierna o monitoriza activos: SCADA, CCTV/VMS, DAI, ATMS, BMS u otros.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ControlSystem', @ColumnName=N'control_system_id', @Description=N'Identificador técnico único del sistema de control.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ControlSystem', @ColumnName=N'facility_id', @Description=N'Ámbito operativo al que pertenece el sistema.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ControlSystem', @ColumnName=N'name', @Description=N'Nombre operativo del sistema.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ControlSystem', @ColumnName=N'system_type', @Description=N'Tipo de sistema: SCADA, VMS_CCTV, DAI, ATMS, BMS u OTHER.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ControlSystem', @ColumnName=N'primary_site', @Description=N'Ubicación principal del sistema si aplica.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ControlSystem', @ColumnName=N'has_backup', @Description=N'Indica si dispone de sistema o sala de respaldo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ControlSystem', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Asset', @Description=N'Activo físico o lógico instalado o supervisado: cámara, sensor, ventilador, luminaria, PMV, semáforo, sistema SOS, etc.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Asset', @ColumnName=N'asset_id', @Description=N'Identificador técnico único del activo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Asset', @ColumnName=N'asset_type_id', @Description=N'Tipo de activo al que pertenece.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Asset', @ColumnName=N'control_system_id', @Description=N'Sistema de control que supervisa o controla el activo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Asset', @ColumnName=N'asset_tag', @Description=N'Etiqueta de inventario única del activo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Asset', @ColumnName=N'manufacturer', @Description=N'Fabricante del activo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Asset', @ColumnName=N'model', @Description=N'Modelo del activo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Asset', @ColumnName=N'serial_number', @Description=N'Número de serie.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Asset', @ColumnName=N'criticality', @Description=N'Criticidad operativa: LOW, MEDIUM, HIGH o SAFETY_CRITICAL.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Asset', @ColumnName=N'asset_status', @Description=N'Estado del activo: OK, DEGRADED, FAILED o MAINTENANCE.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Asset', @ColumnName=N'last_healthcheck_at_utc', @Description=N'Última fecha/hora UTC de comprobación, telemetría o heartbeat.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Asset', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AssetInstallation', @Description=N'Instalación de un activo en una localización concreta, con cobertura, orientación y relación con tubo si aplica.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AssetInstallation', @ColumnName=N'asset_installation_id', @Description=N'Identificador técnico único de la instalación del activo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AssetInstallation', @ColumnName=N'asset_id', @Description=N'Activo instalado.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AssetInstallation', @ColumnName=N'location_id', @Description=N'Localización donde está instalado el activo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AssetInstallation', @ColumnName=N'tube_id', @Description=N'Tubo asociado a la instalación si aplica.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AssetInstallation', @ColumnName=N'installed_at', @Description=N'Fecha de instalación.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AssetInstallation', @ColumnName=N'coverage_start_chainage_m', @Description=N'Inicio de cobertura del activo en metros.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AssetInstallation', @ColumnName=N'coverage_end_chainage_m', @Description=N'Fin de cobertura del activo en metros.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AssetInstallation', @ColumnName=N'orientation', @Description=N'Orientación física o lógica del activo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AssetInstallation', @ColumnName=N'is_primary', @Description=N'Indica si es la instalación principal del activo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AssetInstallation', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Plan', @Description=N'Plan documental u operativo: PAU, Plan de Emergencia o conjunto de protocolos de explotación.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Plan', @ColumnName=N'plan_id', @Description=N'Identificador técnico único del plan.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Plan', @ColumnName=N'facility_id', @Description=N'Ámbito operativo al que pertenece el plan.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Plan', @ColumnName=N'name', @Description=N'Nombre del plan.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Plan', @ColumnName=N'plan_type', @Description=N'Tipo de plan: PAU, EMERGENCY_PLAN u OPERATIONS_PROTOCOLS.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Plan', @ColumnName=N'authority', @Description=N'Autoridad, organismo o área responsable del plan.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Plan', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Plan', @ColumnName=N'created_at_utc', @Description=N'Fecha y hora UTC de creación del registro.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'PlanVersion', @Description=N'Versión concreta de un plan, con vigencia, aprobación y estado. Permite gestionar revisiones y trazabilidad normativa.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'PlanVersion', @ColumnName=N'plan_version_id', @Description=N'Identificador técnico único de la versión del plan.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'PlanVersion', @ColumnName=N'plan_id', @Description=N'Plan al que pertenece la versión.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'PlanVersion', @ColumnName=N'version_label', @Description=N'Etiqueta de versión, por ejemplo v1.0, v1.1 o 2025.03.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'PlanVersion', @ColumnName=N'effective_from', @Description=N'Fecha de inicio de vigencia.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'PlanVersion', @ColumnName=N'effective_to', @Description=N'Fecha de fin de vigencia.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'PlanVersion', @ColumnName=N'version_status', @Description=N'Estado de versión: DRAFT, ACTIVE o RETIRED.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'PlanVersion', @ColumnName=N'approved_by', @Description=N'Persona, área u organismo que aprueba la versión.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'PlanVersion', @ColumnName=N'approval_date', @Description=N'Fecha de aprobación.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'PlanVersion', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'PlanVersion', @ColumnName=N'created_at_utc', @Description=N'Fecha y hora UTC de creación del registro.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'PlanTunnelScope', @Description=N'Relación entre una versión de plan y los túneles cubiertos por ella. Permite que un plan cubra varios túneles y viceversa.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'PlanTunnelScope', @ColumnName=N'plan_tunnel_scope_id', @Description=N'Identificador técnico único de la relación de alcance.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'PlanTunnelScope', @ColumnName=N'plan_version_id', @Description=N'Versión de plan aplicable.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'PlanTunnelScope', @ColumnName=N'tunnel_id', @Description=N'Túnel cubierto por la versión del plan.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'PlanTunnelScope', @ColumnName=N'scope_note', @Description=N'Nota de alcance, por ejemplo fase de obras, tramo parcial o condición especial.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'PlanTunnelScope', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'CodeScheme', @Description=N'Esquema de codificación de incidentes. Permite soportar códigos locales como 100-TRA o esquemas de otros países/operadores.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'CodeScheme', @ColumnName=N'code_scheme_id', @Description=N'Identificador técnico único del esquema de códigos.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'CodeScheme', @ColumnName=N'name', @Description=N'Nombre del esquema de codificación.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'CodeScheme', @ColumnName=N'description', @Description=N'Descripción funcional del esquema.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'CodeScheme', @ColumnName=N'pattern_hint', @Description=N'Pista de patrón o formato, por ejemplo una regex o estructura esperada.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'CodeScheme', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'EmergencyLevel', @Description=N'Nivel de gravedad o activación: prealerta, alerta, emergencia u otros niveles configurables.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'EmergencyLevel', @ColumnName=N'emergency_level_id', @Description=N'Identificador técnico único del nivel de emergencia.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'EmergencyLevel', @ColumnName=N'name', @Description=N'Nombre del nivel.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'EmergencyLevel', @ColumnName=N'rank', @Description=N'Orden de gravedad o prioridad. A mayor valor, mayor nivel si así se configura.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'EmergencyLevel', @ColumnName=N'description', @Description=N'Descripción operativa del nivel.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentFamily', @Description=N'Familia funcional de incidentes: tráfico, avería, incendio, ambiental, iluminación u otras.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentFamily', @ColumnName=N'incident_family_id', @Description=N'Identificador técnico único de la familia.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentFamily', @ColumnName=N'code', @Description=N'Código corto de familia, por ejemplo TRA, AVA, FOC, AMB o ILI.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentFamily', @ColumnName=N'name', @Description=N'Nombre de la familia.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentFamily', @ColumnName=N'description', @Description=N'Descripción de los incidentes incluidos en la familia.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentType', @Description=N'Tipo de incidente catalogado. Es la clasificación que permite seleccionar el protocolo adecuado.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentType', @ColumnName=N'incident_type_id', @Description=N'Identificador técnico único del tipo de incidente.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentType', @ColumnName=N'code_scheme_id', @Description=N'Esquema de codificación al que pertenece el código.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentType', @ColumnName=N'emergency_level_id', @Description=N'Nivel de emergencia asociado al tipo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentType', @ColumnName=N'incident_family_id', @Description=N'Familia funcional del incidente.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentType', @ColumnName=N'code_raw', @Description=N'Código textual del incidente, por ejemplo 260-AVA.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentType', @ColumnName=N'title', @Description=N'Título operativo del incidente.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentType', @ColumnName=N'description', @Description=N'Descripción completa del tipo de incidente.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentType', @ColumnName=N'detection_notes', @Description=N'Notas sobre cómo detectar, verificar o confirmar el incidente.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentType', @ColumnName=N'operational_context', @Description=N'Contexto: NORMAL, WORKS, EVENT u OTHER.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentType', @ColumnName=N'info_to_collect_json', @Description=N'Campos o checklist que el operador debe recopilar, en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentType', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Protocol', @Description=N'Plantilla de actuación asociada a una versión de plan y a un tipo de incidente.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Protocol', @ColumnName=N'protocol_id', @Description=N'Identificador técnico único del protocolo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Protocol', @ColumnName=N'plan_version_id', @Description=N'Versión del plan que define el protocolo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Protocol', @ColumnName=N'incident_type_id', @Description=N'Tipo de incidente gestionado por el protocolo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Protocol', @ColumnName=N'name', @Description=N'Nombre operativo del protocolo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Protocol', @ColumnName=N'objective', @Description=N'Objetivo resumido del protocolo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Protocol', @ColumnName=N'is_remote_executable', @Description=N'Indica si puede ejecutarse desde centro de control o consola remota.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Protocol', @ColumnName=N'protocol_status', @Description=N'Estado del protocolo: ACTIVE, RETIRED o DRAFT.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Protocol', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolStep', @Description=N'Nodo del flujo de trabajo de un protocolo: decisión, acción, espera, información o checklist.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolStep', @ColumnName=N'protocol_step_id', @Description=N'Identificador técnico único del paso.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolStep', @ColumnName=N'protocol_id', @Description=N'Protocolo al que pertenece el paso.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolStep', @ColumnName=N'step_key', @Description=N'Clave estable del paso para referenciarlo desde configuración o interfaz.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolStep', @ColumnName=N'step_type', @Description=N'Tipo de paso: DECISION, ACTION, INFO, WAIT o CHECKLIST.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolStep', @ColumnName=N'title', @Description=N'Título visible del paso.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolStep', @ColumnName=N'instructions', @Description=N'Instrucciones operativas que debe seguir el operador o el sistema.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolStep', @ColumnName=N'requires_ack', @Description=N'Indica si el operador debe confirmar el paso.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolStep', @ColumnName=N'timeout_seconds', @Description=N'Tiempo máximo recomendado antes de escalar o disparar otra transición.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolStep', @ColumnName=N'ui_form_schema_json', @Description=N'Esquema JSON para pintar formularios dinámicos en la interfaz.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolStep', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepTransition', @Description=N'Transición dirigida entre pasos de un protocolo. Permite modelar decisiones condicionales, ramas y rutas alternativas.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepTransition', @ColumnName=N'step_transition_id', @Description=N'Identificador técnico único de la transición.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepTransition', @ColumnName=N'protocol_id', @Description=N'Protocolo al que pertenece la transición.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepTransition', @ColumnName=N'from_step_id', @Description=N'Paso origen.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepTransition', @ColumnName=N'to_step_id', @Description=N'Paso destino.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepTransition', @ColumnName=N'condition_expr', @Description=N'Expresión de condición o regla de negocio. Si es NULL puede interpretarse como transición por defecto.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepTransition', @ColumnName=N'priority', @Description=N'Prioridad de evaluación cuando hay varias transiciones posibles.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepTransition', @ColumnName=N'label', @Description=N'Texto visible para la transición, por ejemplo Sí, No, Confirmado o Escalar.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepTransition', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionDefinition', @Description=N'Catálogo de acciones atómicas ejecutables o registrables: señalización, semáforos, cierre, ventilación, iluminación, megafonía, orden de trabajo, aviso externo, etc.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionDefinition', @ColumnName=N'action_definition_id', @Description=N'Identificador técnico único de la acción definida.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionDefinition', @ColumnName=N'action_type', @Description=N'Tipo de acción: SET_SIGNAGE, SET_SEMAPHORE, CLOSE_TUBE, VENTILATION_MODE, LIGHTING_MODE, PA_ANNOUNCEMENT, CREATE_WORK_ORDER, REQUEST_EXTERNAL, LOG_ONLY u OTHER.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionDefinition', @ColumnName=N'name', @Description=N'Nombre operativo de la acción.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionDefinition', @ColumnName=N'description', @Description=N'Descripción de qué hace la acción.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionDefinition', @ColumnName=N'payload_schema_json', @Description=N'Esquema JSON de los parámetros necesarios para ejecutar la acción.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionDefinition', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepAction', @Description=N'Relación entre un paso de protocolo y una acción definida. Permite ejecutar varias acciones ordenadas por cada paso.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepAction', @ColumnName=N'step_action_id', @Description=N'Identificador técnico único de la relación paso-acción.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepAction', @ColumnName=N'protocol_step_id', @Description=N'Paso de protocolo que dispara la acción.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepAction', @ColumnName=N'action_definition_id', @Description=N'Acción definida que se debe ejecutar o registrar.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepAction', @ColumnName=N'execution_order', @Description=N'Orden de ejecución dentro del paso.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepAction', @ColumnName=N'is_mandatory', @Description=N'Indica si la acción es obligatoria en el paso.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepAction', @ColumnName=N'parameter_binding_json', @Description=N'Mapeo JSON entre parámetros del protocolo/incidente y payload de acción.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepAction', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'NotificationRule', @Description=N'Regla o plantilla de aviso a organismos, centros de control, mantenimiento u otros contactos.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'NotificationRule', @ColumnName=N'notification_rule_id', @Description=N'Identificador técnico único de la regla de notificación.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'NotificationRule', @ColumnName=N'name', @Description=N'Nombre de la regla.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'NotificationRule', @ColumnName=N'purpose', @Description=N'Finalidad del aviso.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'NotificationRule', @ColumnName=N'default_channel', @Description=N'Canal por defecto: PHONE, EMAIL, RADIO, API, SMS u OTHER.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'NotificationRule', @ColumnName=N'message_template', @Description=N'Plantilla del mensaje con variables sustituibles por la aplicación.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'NotificationRule', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepNotification', @Description=N'Relación entre un paso de protocolo y una regla de notificación. Define cuándo y bajo qué condición se envía un aviso.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepNotification', @ColumnName=N'step_notification_id', @Description=N'Identificador técnico único de la relación paso-notificación.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepNotification', @ColumnName=N'protocol_step_id', @Description=N'Paso de protocolo que dispara la notificación.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepNotification', @ColumnName=N'notification_rule_id', @Description=N'Regla de notificación a aplicar.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepNotification', @ColumnName=N'when', @Description=N'Momento de disparo: ON_ENTER, ON_EXIT, ON_TIMEOUT u ON_CONDITION.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepNotification', @ColumnName=N'condition_expr', @Description=N'Condición adicional para disparar el aviso.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'StepNotification', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterDefinition', @Description=N'Definición global de un parámetro configurable: umbrales, límites, tiempos, modos o reglas reutilizables.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterDefinition', @ColumnName=N'parameter_definition_id', @Description=N'Identificador técnico único de la definición de parámetro.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterDefinition', @ColumnName=N'key', @Description=N'Clave única del parámetro, estable para uso en código y configuración.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterDefinition', @ColumnName=N'data_type', @Description=N'Tipo de dato esperado: INT, DECIMAL, BOOLEAN, TEXT o JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterDefinition', @ColumnName=N'unit', @Description=N'Unidad del parámetro si aplica, por ejemplo segundos, ppm, km/h o porcentaje.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterDefinition', @ColumnName=N'description', @Description=N'Descripción funcional del parámetro.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterDefinition', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterSet', @Description=N'Colección de valores de parámetros aplicable a un túnel o a una versión de plan. Sirve para overrides y personalización.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterSet', @ColumnName=N'parameter_set_id', @Description=N'Identificador técnico único del conjunto de parámetros.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterSet', @ColumnName=N'tunnel_id', @Description=N'Túnel al que aplica el conjunto, si es un set por túnel.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterSet', @ColumnName=N'plan_version_id', @Description=N'Versión de plan a la que aplica el conjunto, si es un set por plan.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterSet', @ColumnName=N'name', @Description=N'Nombre del conjunto de parámetros.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterSet', @ColumnName=N'priority', @Description=N'Prioridad para resolver overrides cuando hay varios conjuntos aplicables.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterSet', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterSet', @ColumnName=N'created_at_utc', @Description=N'Fecha y hora UTC de creación del registro.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterValue', @Description=N'Valor concreto de un parámetro dentro de un conjunto. Usa columnas tipadas para mantener compatibilidad y facilitar validación.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterValue', @ColumnName=N'parameter_value_id', @Description=N'Identificador técnico único del valor de parámetro.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterValue', @ColumnName=N'parameter_set_id', @Description=N'Conjunto de parámetros al que pertenece el valor.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterValue', @ColumnName=N'parameter_definition_id', @Description=N'Definición de parámetro que se está valorando.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterValue', @ColumnName=N'value_int', @Description=N'Valor entero si el parámetro es de tipo INT.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterValue', @ColumnName=N'value_decimal', @Description=N'Valor decimal si el parámetro es de tipo DECIMAL.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterValue', @ColumnName=N'value_bool', @Description=N'Valor booleano si el parámetro es de tipo BOOLEAN.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterValue', @ColumnName=N'value_text', @Description=N'Valor textual si el parámetro es de tipo TEXT.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterValue', @ColumnName=N'value_json', @Description=N'Valor JSON si el parámetro es de tipo JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ParameterValue', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolParameter', @Description=N'Relación documental entre protocolo y parámetros que utiliza. Ayuda a validar configuración antes de ejecutar protocolos.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolParameter', @ColumnName=N'protocol_parameter_id', @Description=N'Identificador técnico único de la relación protocolo-parámetro.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolParameter', @ColumnName=N'protocol_id', @Description=N'Protocolo que utiliza el parámetro.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolParameter', @ColumnName=N'parameter_definition_id', @Description=N'Parámetro requerido o utilizado por el protocolo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolParameter', @ColumnName=N'usage_note', @Description=N'Nota que explica cómo usa el protocolo este parámetro.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Role', @Description=N'Rol operativo o administrativo de un usuario: operador, jefe de turno, mantenimiento, supervisor, etc.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Role', @ColumnName=N'role_id', @Description=N'Identificador técnico único del rol.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Role', @ColumnName=N'name', @Description=N'Nombre único del rol.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Role', @ColumnName=N'description', @Description=N'Descripción de permisos o responsabilidades del rol.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Role', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'UserAccount', @Description=N'Usuario de la aplicación o consola operativa. La autenticación puede estar en la aplicación, pero aquí queda la identidad operativa.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'UserAccount', @ColumnName=N'user_id', @Description=N'Identificador técnico único del usuario.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'UserAccount', @ColumnName=N'facility_id', @Description=N'Ámbito operativo al que pertenece el usuario.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'UserAccount', @ColumnName=N'role_id', @Description=N'Rol asignado al usuario.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'UserAccount', @ColumnName=N'username', @Description=N'Nombre de usuario o login.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'UserAccount', @ColumnName=N'display_name', @Description=N'Nombre visible del usuario.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'UserAccount', @ColumnName=N'phone', @Description=N'Teléfono de contacto.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'UserAccount', @ColumnName=N'email', @Description=N'Correo electrónico.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'UserAccount', @ColumnName=N'is_active', @Description=N'Indica si el usuario está activo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'UserAccount', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'UserAccount', @ColumnName=N'created_at_utc', @Description=N'Fecha y hora UTC de creación del registro.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Agency', @Description=N'Organismo o entidad interna/externa que puede ser avisada o participar en la respuesta: emergencias, tráfico, mantenimiento, centro de control, etc.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Agency', @ColumnName=N'agency_id', @Description=N'Identificador técnico único del organismo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Agency', @ColumnName=N'name', @Description=N'Nombre del organismo o entidad.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Agency', @ColumnName=N'agency_type', @Description=N'Tipo: EMERGENCY_SERVICES, TRAFFIC_AUTHORITY, CONTROL_CENTER, MAINTENANCE u OTHER.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Agency', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ContactPoint', @Description=N'Punto de contacto de un organismo: teléfono, radio, email, SMS, endpoint API u otro canal.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ContactPoint', @ColumnName=N'contact_point_id', @Description=N'Identificador técnico único del punto de contacto.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ContactPoint', @ColumnName=N'agency_id', @Description=N'Organismo al que pertenece el contacto.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ContactPoint', @ColumnName=N'name', @Description=N'Nombre o etiqueta del contacto.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ContactPoint', @ColumnName=N'channel', @Description=N'Canal: PHONE, EMAIL, RADIO, API, SMS u OTHER.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ContactPoint', @ColumnName=N'address', @Description=N'Valor del contacto: teléfono, email, endpoint, canal de radio, etc.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ContactPoint', @ColumnName=N'availability', @Description=N'Disponibilidad horaria o condición de uso.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ContactPoint', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentEvent', @Description=N'Incidente real registrado en explotación. Une túnel, tipo de incidente, estado, tiempos, notas y datos operativos.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentEvent', @ColumnName=N'incident_event_id', @Description=N'Identificador técnico único del incidente real.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentEvent', @ColumnName=N'incident_type_id', @Description=N'Tipo de incidente catalogado.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentEvent', @ColumnName=N'tunnel_id', @Description=N'Túnel donde ocurre el incidente.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentEvent', @ColumnName=N'incident_status', @Description=N'Estado del incidente: OPEN, MITIGATING, RESOLVED o CLOSED.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentEvent', @ColumnName=N'started_at_utc', @Description=N'Fecha/hora UTC de inicio o apertura del incidente.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentEvent', @ColumnName=N'detected_at_utc', @Description=N'Fecha/hora UTC de detección si difiere de la apertura.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentEvent', @ColumnName=N'resolved_at_utc', @Description=N'Fecha/hora UTC de resolución.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentEvent', @ColumnName=N'severity_override', @Description=N'Reclasificación manual de severidad si el operador la aplica.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentEvent', @ColumnName=N'summary', @Description=N'Resumen corto del incidente.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentEvent', @ColumnName=N'operator_notes', @Description=N'Notas libres del operador.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentEvent', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'DetectionEvent', @Description=N'Evidencia o evento de detección asociado a un incidente: sensor, CCTV/DAI, alarma SCADA, llamada SOS, aviso externo u observación del operador.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'DetectionEvent', @ColumnName=N'detection_event_id', @Description=N'Identificador técnico único del evento de detección.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'DetectionEvent', @ColumnName=N'incident_event_id', @Description=N'Incidente al que pertenece la evidencia.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'DetectionEvent', @ColumnName=N'source_type', @Description=N'Origen: SENSOR, CCTV_DAI, SCADA_ALARM, SOS_CALL, EXTERNAL_CALL u OPERATOR_OBS.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'DetectionEvent', @ColumnName=N'source_asset_id', @Description=N'Activo que generó la detección, si aplica.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'DetectionEvent', @ColumnName=N'reported_by', @Description=N'Persona, servicio, centro o sistema que reporta la detección.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'DetectionEvent', @ColumnName=N'payload_json', @Description=N'Datos de detección en JSON: medidas, alarmas, valores, texto, etc.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'DetectionEvent', @ColumnName=N'created_at_utc', @Description=N'Fecha/hora UTC de registro de la detección.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentLocation', @Description=N'Relación N:M entre incidente y localización. Permite indicar varias ubicaciones, ubicación principal y grado de confianza.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentLocation', @ColumnName=N'incident_location_id', @Description=N'Identificador técnico único de la relación incidente-localización.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentLocation', @ColumnName=N'incident_event_id', @Description=N'Incidente localizado.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentLocation', @ColumnName=N'location_id', @Description=N'Localización asociada al incidente.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentLocation', @ColumnName=N'confidence', @Description=N'Confianza de la localización entre 0 y 1.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentLocation', @ColumnName=N'is_primary', @Description=N'Indica si es la localización principal del incidente.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'IncidentLocation', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolRun', @Description=N'Ejecución concreta de un protocolo para un incidente real. Guarda estado, usuario iniciador, paso actual y snapshot de contexto.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolRun', @ColumnName=N'protocol_run_id', @Description=N'Identificador técnico único de la ejecución del protocolo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolRun', @ColumnName=N'incident_event_id', @Description=N'Incidente gestionado por esta ejecución.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolRun', @ColumnName=N'protocol_id', @Description=N'Protocolo que se está ejecutando.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolRun', @ColumnName=N'started_by_user_id', @Description=N'Usuario que inició la ejecución.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolRun', @ColumnName=N'started_at_utc', @Description=N'Fecha/hora UTC de inicio de la ejecución.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolRun', @ColumnName=N'ended_at_utc', @Description=N'Fecha/hora UTC de finalización.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolRun', @ColumnName=N'run_status', @Description=N'Estado de ejecución: RUNNING, PAUSED, COMPLETED o ABORTED.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolRun', @ColumnName=N'current_step_id', @Description=N'Paso actual dentro del protocolo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolRun', @ColumnName=N'context_snapshot_json', @Description=N'Snapshot JSON de contexto: parámetros resueltos, estado de activos, datos del incidente, etc.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ProtocolRun', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionExecution', @Description=N'Acción concreta solicitada, enviada, ejecutada o fallida durante una ejecución de protocolo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionExecution', @ColumnName=N'action_execution_id', @Description=N'Identificador técnico único de la ejecución de acción.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionExecution', @ColumnName=N'protocol_run_id', @Description=N'Ejecución de protocolo a la que pertenece.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionExecution', @ColumnName=N'action_definition_id', @Description=N'Acción definida que se ejecuta.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionExecution', @ColumnName=N'step_id', @Description=N'Paso que disparó la acción.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionExecution', @ColumnName=N'requested_at_utc', @Description=N'Fecha/hora UTC en que se solicitó la acción.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionExecution', @ColumnName=N'executed_at_utc', @Description=N'Fecha/hora UTC en que se ejecutó o se confirmó.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionExecution', @ColumnName=N'exec_status', @Description=N'Estado: REQUESTED, SENT, SUCCESS, FAILED o CANCELLED.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionExecution', @ColumnName=N'payload_json', @Description=N'Payload JSON real enviado o registrado para ejecutar la acción.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionExecution', @ColumnName=N'result_json', @Description=N'Resultado JSON devuelto por el sistema o integración.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionExecution', @ColumnName=N'error_message', @Description=N'Mensaje de error si la acción falla.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionTarget', @Description=N'Equipos o activos afectados por una acción concreta. Permite una acción sobre múltiples objetivos.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionTarget', @ColumnName=N'action_target_id', @Description=N'Identificador técnico único del objetivo de acción.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionTarget', @ColumnName=N'action_execution_id', @Description=N'Ejecución de acción que afecta al activo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionTarget', @ColumnName=N'asset_id', @Description=N'Activo objetivo de la acción.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionTarget', @ColumnName=N'target_role', @Description=N'Papel del activo en la acción, por ejemplo PMV entrada o ventilador sector 2.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'ActionTarget', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Notification', @Description=N'Notificación real enviada o pendiente dentro de una ejecución de protocolo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Notification', @ColumnName=N'notification_id', @Description=N'Identificador técnico único de la notificación.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Notification', @ColumnName=N'protocol_run_id', @Description=N'Ejecución de protocolo que origina la notificación.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Notification', @ColumnName=N'contact_point_id', @Description=N'Punto de contacto destinatario.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Notification', @ColumnName=N'notification_rule_id', @Description=N'Regla de notificación aplicada, si procede.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Notification', @ColumnName=N'sent_at_utc', @Description=N'Fecha/hora UTC de envío.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Notification', @ColumnName=N'notif_status', @Description=N'Estado: PENDING, SENT, FAILED o ACKED.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Notification', @ColumnName=N'message', @Description=N'Mensaje final enviado o preparado.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Notification', @ColumnName=N'ack_at_utc', @Description=N'Fecha/hora UTC de acuse o confirmación.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'Notification', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'WorkOrder', @Description=N'Orden de trabajo o mantenimiento asociada a un activo y opcionalmente generada desde un incidente.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'WorkOrder', @ColumnName=N'work_order_id', @Description=N'Identificador técnico único de la orden de trabajo.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'WorkOrder', @ColumnName=N'asset_id', @Description=N'Activo afectado por la orden.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'WorkOrder', @ColumnName=N'created_from_incident_id', @Description=N'Incidente que originó la orden si aplica.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'WorkOrder', @ColumnName=N'priority', @Description=N'Prioridad: LOW, MEDIUM, HIGH o URGENT.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'WorkOrder', @ColumnName=N'work_status', @Description=N'Estado: OPEN, IN_PROGRESS, DONE o CANCELLED.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'WorkOrder', @ColumnName=N'description', @Description=N'Descripción del trabajo o incidencia técnica.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'WorkOrder', @ColumnName=N'created_at_utc', @Description=N'Fecha/hora UTC de creación de la orden.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'WorkOrder', @ColumnName=N'closed_at_utc', @Description=N'Fecha/hora UTC de cierre.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'WorkOrder', @ColumnName=N'meta_json', @Description=N'Datos adicionales flexibles en JSON.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AuditLog', @Description=N'Registro de auditoría legal/operativa: cambios, ejecuciones, overrides y acciones relevantes del usuario o del sistema.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AuditLog', @ColumnName=N'audit_log_id', @Description=N'Identificador técnico único del evento de auditoría.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AuditLog', @ColumnName=N'user_id', @Description=N'Usuario que realiza la acción, si aplica.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AuditLog', @ColumnName=N'incident_event_id', @Description=N'Incidente relacionado con la acción auditada, si aplica.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AuditLog', @ColumnName=N'entity_type', @Description=N'Tipo de entidad afectada, por ejemplo ProtocolRun, Asset o IncidentEvent.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AuditLog', @ColumnName=N'entity_id', @Description=N'Identificador de la entidad afectada.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AuditLog', @ColumnName=N'action', @Description=N'Acción realizada: CREATE, UPDATE, EXECUTE, OVERRIDE, etc.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AuditLog', @ColumnName=N'timestamp_utc', @Description=N'Fecha/hora UTC del evento auditado.';
-EXEC tunnel.usp_SetDescription @ObjectName=N'AuditLog', @ColumnName=N'details_json', @Description=N'Detalles de auditoría en JSON.';
-
-
--------------------------------------------------------------------------------
--- 8) VISTAS INTERNAS DE DOCUMENTACIÓN
---    Estas vistas permiten consultar la documentación desde la propia BBDD.
--------------------------------------------------------------------------------
-EXEC(N'
-CREATE OR ALTER VIEW tunnel.v_TableDocumentation
-AS
-SELECT
-    DB_NAME() AS database_name,
-    s.name AS schema_name,
-    t.name AS table_name,
-    CAST(ep.value AS NVARCHAR(4000)) AS table_description
-FROM sys.tables t
-JOIN sys.schemas s
-    ON s.schema_id = t.schema_id
-LEFT JOIN sys.extended_properties ep
-    ON ep.class = 1
-   AND ep.major_id = t.object_id
-   AND ep.minor_id = 0
-   AND ep.name = N''MS_Description''
-WHERE s.name = N''tunnel'';
-');
-
-EXEC(N'
-CREATE OR ALTER VIEW tunnel.v_ColumnDocumentation
-AS
-SELECT
-    DB_NAME() AS database_name,
-    s.name AS schema_name,
-    t.name AS table_name,
-    c.column_id,
-    c.name AS column_name,
-    CASE
-        WHEN ty.name IN (N''nvarchar'', N''nchar'')
-            THEN ty.name + N''('' + CASE WHEN c.max_length = -1 THEN N''MAX'' ELSE CONVERT(NVARCHAR(20), c.max_length / 2) END + N'')''
-        WHEN ty.name IN (N''varchar'', N''char'', N''varbinary'', N''binary'')
-            THEN ty.name + N''('' + CASE WHEN c.max_length = -1 THEN N''MAX'' ELSE CONVERT(NVARCHAR(20), c.max_length) END + N'')''
-        WHEN ty.name IN (N''decimal'', N''numeric'')
-            THEN ty.name + N''('' + CONVERT(NVARCHAR(20), c.precision) + N'','' + CONVERT(NVARCHAR(20), c.scale) + N'')''
-        WHEN ty.name IN (N''datetime2'', N''datetimeoffset'', N''time'')
-            THEN ty.name + N''('' + CONVERT(NVARCHAR(20), c.scale) + N'')''
-        ELSE ty.name
-    END AS data_type,
-    c.is_nullable,
-    dc.definition AS default_definition,
-    CAST(ep.value AS NVARCHAR(4000)) AS column_description
-FROM sys.tables t
-JOIN sys.schemas s
-    ON s.schema_id = t.schema_id
-JOIN sys.columns c
-    ON c.object_id = t.object_id
-JOIN sys.types ty
-    ON ty.user_type_id = c.user_type_id
-LEFT JOIN sys.default_constraints dc
-    ON dc.parent_object_id = t.object_id
-   AND dc.parent_column_id = c.column_id
-LEFT JOIN sys.extended_properties ep
-    ON ep.class = 1
-   AND ep.major_id = t.object_id
-   AND ep.minor_id = c.column_id
-   AND ep.name = N''MS_Description''
-WHERE s.name = N''tunnel'';
-');
-
-EXEC(N'
-CREATE OR ALTER VIEW tunnel.v_DatabaseDictionary
-AS
-SELECT
-    N''TABLE'' AS item_type,
-    schema_name,
-    table_name,
-    CAST(NULL AS INT) AS column_id,
-    CAST(NULL AS SYSNAME) AS column_name,
-    CAST(NULL AS NVARCHAR(128)) AS data_type,
-    table_description AS description
-FROM tunnel.v_TableDocumentation
-UNION ALL
-SELECT
-    N''COLUMN'' AS item_type,
-    schema_name,
-    table_name,
-    column_id,
-    column_name,
-    data_type,
-    column_description AS description
-FROM tunnel.v_ColumnDocumentation;
-');
-
+    INSERT INTO tunnel.DatabaseDocumentation (object_type, table_name, column_name, description)
+    VALUES
+    (N'TABLE', N'Organization', NULL, N'Organización propietaria, gestora o concesionaria responsable de una o varias instalaciones o redes de túneles.'),
+    (N'COLUMN', N'Organization', N'organization_id', N'Identificador técnico único de la organización. Se usa como clave primaria y no debe cambiar.'),
+    (N'COLUMN', N'Organization', N'name', N'Nombre oficial o operativo de la organización.'),
+    (N'COLUMN', N'Organization', N'legal_id', N'Identificador legal/fiscal si aplica, por ejemplo CIF, NIF o identificador administrativo.'),
+    (N'COLUMN', N'Organization', N'country_code', N'Código de país ISO-3166 alfa-3, por ejemplo ESP.'),
+    (N'COLUMN', N'Organization', N'timezone_default', N'Zona horaria por defecto de la organización o ámbito principal.'),
+    (N'COLUMN', N'Organization', N'created_at_utc', N'Fecha y hora UTC de creación del registro.'),
+    (N'COLUMN', N'Organization', N'meta_json', N'Campo JSON extensible para datos adicionales no normalizados.'),
+    (N'TABLE', N'Facility', NULL, N'Ámbito operativo gestionado por una organización: red urbana, concesión, centro de control, autopista o instalación equivalente.'),
+    (N'COLUMN', N'Facility', N'facility_id', N'Identificador técnico único del ámbito o instalación.'),
+    (N'COLUMN', N'Facility', N'organization_id', N'Organización propietaria o gestora de la instalación.'),
+    (N'COLUMN', N'Facility', N'name', N'Nombre operativo de la instalación, red o centro de control.'),
+    (N'COLUMN', N'Facility', N'facility_type', N'Tipo de instalación: CITY_NETWORK, HIGHWAY_CONCESSION, SINGLE_TUNNEL o CONTROL_CENTER_SCOPE.'),
+    (N'COLUMN', N'Facility', N'address', N'Dirección física o descripción de ubicación si procede.'),
+    (N'COLUMN', N'Facility', N'timezone', N'Zona horaria propia del ámbito operativo.'),
+    (N'COLUMN', N'Facility', N'contact_phone', N'Teléfono general de contacto.'),
+    (N'COLUMN', N'Facility', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'COLUMN', N'Facility', N'created_at_utc', N'Fecha y hora UTC de creación del registro.'),
+    (N'TABLE', N'Tunnel', NULL, N'Túnel físico individual. Representa la infraestructura principal y permite vincular tubos, zonas, localizaciones, planes e incidencias.'),
+    (N'COLUMN', N'Tunnel', N'tunnel_id', N'Identificador técnico único del túnel.'),
+    (N'COLUMN', N'Tunnel', N'facility_id', N'Ámbito operativo al que pertenece el túnel.'),
+    (N'COLUMN', N'Tunnel', N'name', N'Nombre oficial u operativo del túnel.'),
+    (N'COLUMN', N'Tunnel', N'local_code', N'Código interno/local del túnel.'),
+    (N'COLUMN', N'Tunnel', N'road_name', N'Carretera, ronda, vía o eje viario asociado.'),
+    (N'COLUMN', N'Tunnel', N'country_code', N'Código de país ISO-3166 alfa-3.'),
+    (N'COLUMN', N'Tunnel', N'city', N'Ciudad o área territorial.'),
+    (N'COLUMN', N'Tunnel', N'length_m', N'Longitud aproximada del túnel en metros.'),
+    (N'COLUMN', N'Tunnel', N'has_bidirectional_tubes', N'Indica si el túnel tiene tubos o sentidos bidireccionales.'),
+    (N'COLUMN', N'Tunnel', N'commissioning_date', N'Fecha de puesta en servicio.'),
+    (N'COLUMN', N'Tunnel', N'tunnel_status', N'Estado operativo del túnel: ACTIVE, WORKS o DECOMMISSIONED.'),
+    (N'COLUMN', N'Tunnel', N'meta_json', N'Datos adicionales como normativa, restricciones, notas geométricas o configuración local.'),
+    (N'COLUMN', N'Tunnel', N'created_at_utc', N'Fecha y hora UTC de creación del registro.'),
+    (N'TABLE', N'Tube', NULL, N'Tubo, sentido o calzada interna de un túnel. Permite modelar túneles de uno o varios tubos y sentidos de circulación.'),
+    (N'COLUMN', N'Tube', N'tube_id', N'Identificador técnico único del tubo o sentido.'),
+    (N'COLUMN', N'Tube', N'tunnel_id', N'Túnel al que pertenece el tubo.'),
+    (N'COLUMN', N'Tube', N'name', N'Nombre del tubo o sentido, por ejemplo Besòs, Llobregat, Ascendente o Descendente.'),
+    (N'COLUMN', N'Tube', N'direction', N'Dirección normalizada: N, S, E, W, A_TO_B, B_TO_A o BIDIR.'),
+    (N'COLUMN', N'Tube', N'lanes_count', N'Número de carriles del tubo.'),
+    (N'COLUMN', N'Tube', N'speed_limit_kmh', N'Velocidad máxima autorizada en km/h.'),
+    (N'COLUMN', N'Tube', N'gradient_percent', N'Pendiente media o relevante expresada en porcentaje.'),
+    (N'COLUMN', N'Tube', N'cross_section_type', N'Tipo de sección o configuración geométrica.'),
+    (N'COLUMN', N'Tube', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'Zone', NULL, N'Sectorización interna de un tubo: zona operativa, compartimento de incendio, zona de evacuación, zona vulnerable o tramo de riesgo.'),
+    (N'COLUMN', N'Zone', N'zone_id', N'Identificador técnico único de la zona.'),
+    (N'COLUMN', N'Zone', N'tube_id', N'Tubo al que pertenece la zona.'),
+    (N'COLUMN', N'Zone', N'name', N'Nombre de la zona.'),
+    (N'COLUMN', N'Zone', N'zone_type', N'Tipo de zona: OPERATIONAL, FIRE_COMPARTMENT, EVACUATION, RISK o VULNERABLE.'),
+    (N'COLUMN', N'Zone', N'start_chainage_m', N'Inicio de la zona en metros de progresiva o referencia lineal.'),
+    (N'COLUMN', N'Zone', N'end_chainage_m', N'Fin de la zona en metros de progresiva o referencia lineal.'),
+    (N'COLUMN', N'Zone', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'Location', NULL, N'Localización operativa dentro de un túnel: boca, tramo, punto kilométrico, sala técnica, salida de emergencia, poste SOS, cámara u otro punto relevante.'),
+    (N'COLUMN', N'Location', N'location_id', N'Identificador técnico único de la localización.'),
+    (N'COLUMN', N'Location', N'tunnel_id', N'Túnel al que pertenece la localización.'),
+    (N'COLUMN', N'Location', N'zone_id', N'Zona a la que pertenece la localización si aplica.'),
+    (N'COLUMN', N'Location', N'location_type', N'Tipo: PORTAL, SEGMENT, LANE_POINT, TECH_ROOM, CROSS_PASSAGE, EMERGENCY_EXIT, SOS_POST, CAMERA_POLE u OTHER.'),
+    (N'COLUMN', N'Location', N'name', N'Nombre o etiqueta de la localización.'),
+    (N'COLUMN', N'Location', N'chainage_m', N'Progresiva o referencia lineal en metros.'),
+    (N'COLUMN', N'Location', N'geom', N'Coordenada geográfica opcional. Normalmente SRID 4326.'),
+    (N'COLUMN', N'Location', N'access_description', N'Descripción de acceso para operadores o ayuda externa.'),
+    (N'COLUMN', N'Location', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'AssetType', NULL, N'Catálogo de tipos de equipamiento independientes de fabricante: CCTV, DAI, SCADA, ventilación, iluminación, PMV, semáforos, SOS, sensores, etc.'),
+    (N'COLUMN', N'AssetType', N'asset_type_id', N'Identificador técnico único del tipo de activo.'),
+    (N'COLUMN', N'AssetType', N'category', N'Categoría funcional normalizada del activo.'),
+    (N'COLUMN', N'AssetType', N'name', N'Nombre concreto del tipo de activo.'),
+    (N'COLUMN', N'AssetType', N'vendor_independent', N'Indica si el tipo es independiente de fabricante.'),
+    (N'COLUMN', N'AssetType', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'ControlSystem', NULL, N'Sistema de control o supervisión que gobierna o monitoriza activos: SCADA, CCTV/VMS, DAI, ATMS, BMS u otros.'),
+    (N'COLUMN', N'ControlSystem', N'control_system_id', N'Identificador técnico único del sistema de control.'),
+    (N'COLUMN', N'ControlSystem', N'facility_id', N'Ámbito operativo al que pertenece el sistema.'),
+    (N'COLUMN', N'ControlSystem', N'name', N'Nombre operativo del sistema.'),
+    (N'COLUMN', N'ControlSystem', N'system_type', N'Tipo de sistema: SCADA, VMS_CCTV, DAI, ATMS, BMS u OTHER.'),
+    (N'COLUMN', N'ControlSystem', N'primary_site', N'Ubicación principal del sistema si aplica.'),
+    (N'COLUMN', N'ControlSystem', N'has_backup', N'Indica si dispone de sistema o sala de respaldo.'),
+    (N'COLUMN', N'ControlSystem', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'Asset', NULL, N'Activo físico o lógico instalado o supervisado: cámara, sensor, ventilador, luminaria, PMV, semáforo, sistema SOS, etc.'),
+    (N'COLUMN', N'Asset', N'asset_id', N'Identificador técnico único del activo.'),
+    (N'COLUMN', N'Asset', N'asset_type_id', N'Tipo de activo al que pertenece.'),
+    (N'COLUMN', N'Asset', N'control_system_id', N'Sistema de control que supervisa o controla el activo.'),
+    (N'COLUMN', N'Asset', N'asset_tag', N'Etiqueta de inventario única del activo.'),
+    (N'COLUMN', N'Asset', N'manufacturer', N'Fabricante del activo.'),
+    (N'COLUMN', N'Asset', N'model', N'Modelo del activo.'),
+    (N'COLUMN', N'Asset', N'serial_number', N'Número de serie.'),
+    (N'COLUMN', N'Asset', N'criticality', N'Criticidad operativa: LOW, MEDIUM, HIGH o SAFETY_CRITICAL.'),
+    (N'COLUMN', N'Asset', N'asset_status', N'Estado del activo: OK, DEGRADED, FAILED o MAINTENANCE.'),
+    (N'COLUMN', N'Asset', N'last_healthcheck_at_utc', N'Última fecha/hora UTC de comprobación, telemetría o heartbeat.'),
+    (N'COLUMN', N'Asset', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'AssetInstallation', NULL, N'Instalación de un activo en una localización concreta, con cobertura, orientación y relación con tubo si aplica.'),
+    (N'COLUMN', N'AssetInstallation', N'asset_installation_id', N'Identificador técnico único de la instalación del activo.'),
+    (N'COLUMN', N'AssetInstallation', N'asset_id', N'Activo instalado.'),
+    (N'COLUMN', N'AssetInstallation', N'location_id', N'Localización donde está instalado el activo.'),
+    (N'COLUMN', N'AssetInstallation', N'tube_id', N'Tubo asociado a la instalación si aplica.'),
+    (N'COLUMN', N'AssetInstallation', N'installed_at', N'Fecha de instalación.'),
+    (N'COLUMN', N'AssetInstallation', N'coverage_start_chainage_m', N'Inicio de cobertura del activo en metros.'),
+    (N'COLUMN', N'AssetInstallation', N'coverage_end_chainage_m', N'Fin de cobertura del activo en metros.'),
+    (N'COLUMN', N'AssetInstallation', N'orientation', N'Orientación física o lógica del activo.'),
+    (N'COLUMN', N'AssetInstallation', N'is_primary', N'Indica si es la instalación principal del activo.'),
+    (N'COLUMN', N'AssetInstallation', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'Plan', NULL, N'Plan documental u operativo: PAU, Plan de Emergencia o conjunto de protocolos de explotación.'),
+    (N'COLUMN', N'Plan', N'plan_id', N'Identificador técnico único del plan.'),
+    (N'COLUMN', N'Plan', N'facility_id', N'Ámbito operativo al que pertenece el plan.'),
+    (N'COLUMN', N'Plan', N'name', N'Nombre del plan.'),
+    (N'COLUMN', N'Plan', N'plan_type', N'Tipo de plan: PAU, EMERGENCY_PLAN u OPERATIONS_PROTOCOLS.'),
+    (N'COLUMN', N'Plan', N'authority', N'Autoridad, organismo o área responsable del plan.'),
+    (N'COLUMN', N'Plan', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'COLUMN', N'Plan', N'created_at_utc', N'Fecha y hora UTC de creación del registro.'),
+    (N'TABLE', N'PlanVersion', NULL, N'Versión concreta de un plan, con vigencia, aprobación y estado. Permite gestionar revisiones y trazabilidad normativa.'),
+    (N'COLUMN', N'PlanVersion', N'plan_version_id', N'Identificador técnico único de la versión del plan.'),
+    (N'COLUMN', N'PlanVersion', N'plan_id', N'Plan al que pertenece la versión.'),
+    (N'COLUMN', N'PlanVersion', N'version_label', N'Etiqueta de versión, por ejemplo v1.0, v1.1 o 2025.03.'),
+    (N'COLUMN', N'PlanVersion', N'effective_from', N'Fecha de inicio de vigencia.'),
+    (N'COLUMN', N'PlanVersion', N'effective_to', N'Fecha de fin de vigencia.'),
+    (N'COLUMN', N'PlanVersion', N'version_status', N'Estado de versión: DRAFT, ACTIVE o RETIRED.'),
+    (N'COLUMN', N'PlanVersion', N'approved_by', N'Persona, área u organismo que aprueba la versión.'),
+    (N'COLUMN', N'PlanVersion', N'approval_date', N'Fecha de aprobación.'),
+    (N'COLUMN', N'PlanVersion', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'COLUMN', N'PlanVersion', N'created_at_utc', N'Fecha y hora UTC de creación del registro.'),
+    (N'TABLE', N'PlanTunnelScope', NULL, N'Relación entre una versión de plan y los túneles cubiertos por ella. Permite que un plan cubra varios túneles y viceversa.'),
+    (N'COLUMN', N'PlanTunnelScope', N'plan_tunnel_scope_id', N'Identificador técnico único de la relación de alcance.'),
+    (N'COLUMN', N'PlanTunnelScope', N'plan_version_id', N'Versión de plan aplicable.'),
+    (N'COLUMN', N'PlanTunnelScope', N'tunnel_id', N'Túnel cubierto por la versión del plan.'),
+    (N'COLUMN', N'PlanTunnelScope', N'scope_note', N'Nota de alcance, por ejemplo fase de obras, tramo parcial o condición especial.'),
+    (N'COLUMN', N'PlanTunnelScope', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'CodeScheme', NULL, N'Esquema de codificación de incidentes. Permite soportar códigos locales como 100-TRA o esquemas de otros países/operadores.'),
+    (N'COLUMN', N'CodeScheme', N'code_scheme_id', N'Identificador técnico único del esquema de códigos.'),
+    (N'COLUMN', N'CodeScheme', N'name', N'Nombre del esquema de codificación.'),
+    (N'COLUMN', N'CodeScheme', N'description', N'Descripción funcional del esquema.'),
+    (N'COLUMN', N'CodeScheme', N'pattern_hint', N'Pista de patrón o formato, por ejemplo una regex o estructura esperada.'),
+    (N'COLUMN', N'CodeScheme', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'EmergencyLevel', NULL, N'Nivel de gravedad o activación: prealerta, alerta, emergencia u otros niveles configurables.'),
+    (N'COLUMN', N'EmergencyLevel', N'emergency_level_id', N'Identificador técnico único del nivel de emergencia.'),
+    (N'COLUMN', N'EmergencyLevel', N'name', N'Nombre del nivel.'),
+    (N'COLUMN', N'EmergencyLevel', N'rank', N'Orden de gravedad o prioridad. A mayor valor, mayor nivel si así se configura.'),
+    (N'COLUMN', N'EmergencyLevel', N'description', N'Descripción operativa del nivel.'),
+    (N'TABLE', N'IncidentFamily', NULL, N'Familia funcional de incidentes: tráfico, avería, incendio, ambiental, iluminación u otras.'),
+    (N'COLUMN', N'IncidentFamily', N'incident_family_id', N'Identificador técnico único de la familia.'),
+    (N'COLUMN', N'IncidentFamily', N'code', N'Código corto de familia, por ejemplo TRA, AVA, FOC, AMB o ILI.'),
+    (N'COLUMN', N'IncidentFamily', N'name', N'Nombre de la familia.'),
+    (N'COLUMN', N'IncidentFamily', N'description', N'Descripción de los incidentes incluidos en la familia.'),
+    (N'TABLE', N'IncidentType', NULL, N'Tipo de incidente catalogado. Es la clasificación que permite seleccionar el protocolo adecuado.'),
+    (N'COLUMN', N'IncidentType', N'incident_type_id', N'Identificador técnico único del tipo de incidente.'),
+    (N'COLUMN', N'IncidentType', N'code_scheme_id', N'Esquema de codificación al que pertenece el código.'),
+    (N'COLUMN', N'IncidentType', N'emergency_level_id', N'Nivel de emergencia asociado al tipo.'),
+    (N'COLUMN', N'IncidentType', N'incident_family_id', N'Familia funcional del incidente.'),
+    (N'COLUMN', N'IncidentType', N'code_raw', N'Código textual del incidente, por ejemplo 260-AVA.'),
+    (N'COLUMN', N'IncidentType', N'title', N'Título operativo del incidente.'),
+    (N'COLUMN', N'IncidentType', N'description', N'Descripción completa del tipo de incidente.'),
+    (N'COLUMN', N'IncidentType', N'detection_notes', N'Notas sobre cómo detectar, verificar o confirmar el incidente.'),
+    (N'COLUMN', N'IncidentType', N'operational_context', N'Contexto: NORMAL, WORKS, EVENT u OTHER.'),
+    (N'COLUMN', N'IncidentType', N'info_to_collect_json', N'Campos o checklist que el operador debe recopilar, en JSON.'),
+    (N'COLUMN', N'IncidentType', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'Protocol', NULL, N'Plantilla de actuación asociada a una versión de plan y a un tipo de incidente.'),
+    (N'COLUMN', N'Protocol', N'protocol_id', N'Identificador técnico único del protocolo.'),
+    (N'COLUMN', N'Protocol', N'plan_version_id', N'Versión del plan que define el protocolo.'),
+    (N'COLUMN', N'Protocol', N'incident_type_id', N'Tipo de incidente gestionado por el protocolo.'),
+    (N'COLUMN', N'Protocol', N'name', N'Nombre operativo del protocolo.'),
+    (N'COLUMN', N'Protocol', N'objective', N'Objetivo resumido del protocolo.'),
+    (N'COLUMN', N'Protocol', N'is_remote_executable', N'Indica si puede ejecutarse desde centro de control o consola remota.'),
+    (N'COLUMN', N'Protocol', N'protocol_status', N'Estado del protocolo: ACTIVE, RETIRED o DRAFT.'),
+    (N'COLUMN', N'Protocol', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'ProtocolStep', NULL, N'Nodo del flujo de trabajo de un protocolo: decisión, acción, espera, información o checklist.'),
+    (N'COLUMN', N'ProtocolStep', N'protocol_step_id', N'Identificador técnico único del paso.'),
+    (N'COLUMN', N'ProtocolStep', N'protocol_id', N'Protocolo al que pertenece el paso.'),
+    (N'COLUMN', N'ProtocolStep', N'step_key', N'Clave estable del paso para referenciarlo desde configuración o interfaz.'),
+    (N'COLUMN', N'ProtocolStep', N'step_type', N'Tipo de paso: DECISION, ACTION, INFO, WAIT o CHECKLIST.'),
+    (N'COLUMN', N'ProtocolStep', N'title', N'Título visible del paso.'),
+    (N'COLUMN', N'ProtocolStep', N'instructions', N'Instrucciones operativas que debe seguir el operador o el sistema.'),
+    (N'COLUMN', N'ProtocolStep', N'requires_ack', N'Indica si el operador debe confirmar el paso.'),
+    (N'COLUMN', N'ProtocolStep', N'timeout_seconds', N'Tiempo máximo recomendado antes de escalar o disparar otra transición.'),
+    (N'COLUMN', N'ProtocolStep', N'ui_form_schema_json', N'Esquema JSON para pintar formularios dinámicos en la interfaz.'),
+    (N'COLUMN', N'ProtocolStep', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'StepTransition', NULL, N'Transición dirigida entre pasos de un protocolo. Permite modelar decisiones condicionales, ramas y rutas alternativas.'),
+    (N'COLUMN', N'StepTransition', N'step_transition_id', N'Identificador técnico único de la transición.'),
+    (N'COLUMN', N'StepTransition', N'protocol_id', N'Protocolo al que pertenece la transición.'),
+    (N'COLUMN', N'StepTransition', N'from_step_id', N'Paso origen.'),
+    (N'COLUMN', N'StepTransition', N'to_step_id', N'Paso destino.'),
+    (N'COLUMN', N'StepTransition', N'condition_expr', N'Expresión de condición o regla de negocio. Si es NULL puede interpretarse como transición por defecto.'),
+    (N'COLUMN', N'StepTransition', N'priority', N'Prioridad de evaluación cuando hay varias transiciones posibles.'),
+    (N'COLUMN', N'StepTransition', N'label', N'Texto visible para la transición, por ejemplo Sí, No, Confirmado o Escalar.'),
+    (N'COLUMN', N'StepTransition', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'ActionDefinition', NULL, N'Catálogo de acciones atómicas ejecutables o registrables: señalización, semáforos, cierre, ventilación, iluminación, megafonía, orden de trabajo, aviso externo, etc.'),
+    (N'COLUMN', N'ActionDefinition', N'action_definition_id', N'Identificador técnico único de la acción definida.'),
+    (N'COLUMN', N'ActionDefinition', N'action_type', N'Tipo de acción: SET_SIGNAGE, SET_SEMAPHORE, CLOSE_TUBE, VENTILATION_MODE, LIGHTING_MODE, PA_ANNOUNCEMENT, CREATE_WORK_ORDER, REQUEST_EXTERNAL, LOG_ONLY u OTHER.'),
+    (N'COLUMN', N'ActionDefinition', N'name', N'Nombre operativo de la acción.'),
+    (N'COLUMN', N'ActionDefinition', N'description', N'Descripción de qué hace la acción.'),
+    (N'COLUMN', N'ActionDefinition', N'payload_schema_json', N'Esquema JSON de los parámetros necesarios para ejecutar la acción.'),
+    (N'COLUMN', N'ActionDefinition', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'StepAction', NULL, N'Relación entre un paso de protocolo y una acción definida. Permite ejecutar varias acciones ordenadas por cada paso.'),
+    (N'COLUMN', N'StepAction', N'step_action_id', N'Identificador técnico único de la relación paso-acción.'),
+    (N'COLUMN', N'StepAction', N'protocol_step_id', N'Paso de protocolo que dispara la acción.'),
+    (N'COLUMN', N'StepAction', N'action_definition_id', N'Acción definida que se debe ejecutar o registrar.'),
+    (N'COLUMN', N'StepAction', N'execution_order', N'Orden de ejecución dentro del paso.'),
+    (N'COLUMN', N'StepAction', N'is_mandatory', N'Indica si la acción es obligatoria en el paso.'),
+    (N'COLUMN', N'StepAction', N'parameter_binding_json', N'Mapeo JSON entre parámetros del protocolo/incidente y payload de acción.'),
+    (N'COLUMN', N'StepAction', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'NotificationRule', NULL, N'Regla o plantilla de aviso a organismos, centros de control, mantenimiento u otros contactos.'),
+    (N'COLUMN', N'NotificationRule', N'notification_rule_id', N'Identificador técnico único de la regla de notificación.'),
+    (N'COLUMN', N'NotificationRule', N'name', N'Nombre de la regla.'),
+    (N'COLUMN', N'NotificationRule', N'purpose', N'Finalidad del aviso.'),
+    (N'COLUMN', N'NotificationRule', N'default_channel', N'Canal por defecto: PHONE, EMAIL, RADIO, API, SMS u OTHER.'),
+    (N'COLUMN', N'NotificationRule', N'message_template', N'Plantilla del mensaje con variables sustituibles por la aplicación.'),
+    (N'COLUMN', N'NotificationRule', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'StepNotification', NULL, N'Relación entre un paso de protocolo y una regla de notificación. Define cuándo y bajo qué condición se envía un aviso.'),
+    (N'COLUMN', N'StepNotification', N'step_notification_id', N'Identificador técnico único de la relación paso-notificación.'),
+    (N'COLUMN', N'StepNotification', N'protocol_step_id', N'Paso de protocolo que dispara la notificación.'),
+    (N'COLUMN', N'StepNotification', N'notification_rule_id', N'Regla de notificación a aplicar.'),
+    (N'COLUMN', N'StepNotification', N'when', N'Momento de disparo: ON_ENTER, ON_EXIT, ON_TIMEOUT u ON_CONDITION.'),
+    (N'COLUMN', N'StepNotification', N'condition_expr', N'Condición adicional para disparar el aviso.'),
+    (N'COLUMN', N'StepNotification', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'ParameterDefinition', NULL, N'Definición global de un parámetro configurable: umbrales, límites, tiempos, modos o reglas reutilizables.'),
+    (N'COLUMN', N'ParameterDefinition', N'parameter_definition_id', N'Identificador técnico único de la definición de parámetro.'),
+    (N'COLUMN', N'ParameterDefinition', N'key', N'Clave única del parámetro, estable para uso en código y configuración.'),
+    (N'COLUMN', N'ParameterDefinition', N'data_type', N'Tipo de dato esperado: INT, DECIMAL, BOOLEAN, TEXT o JSON.'),
+    (N'COLUMN', N'ParameterDefinition', N'unit', N'Unidad del parámetro si aplica, por ejemplo segundos, ppm, km/h o porcentaje.'),
+    (N'COLUMN', N'ParameterDefinition', N'description', N'Descripción funcional del parámetro.'),
+    (N'COLUMN', N'ParameterDefinition', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'ParameterSet', NULL, N'Colección de valores de parámetros aplicable a un túnel o a una versión de plan. Sirve para overrides y personalización.'),
+    (N'COLUMN', N'ParameterSet', N'parameter_set_id', N'Identificador técnico único del conjunto de parámetros.'),
+    (N'COLUMN', N'ParameterSet', N'tunnel_id', N'Túnel al que aplica el conjunto, si es un set por túnel.'),
+    (N'COLUMN', N'ParameterSet', N'plan_version_id', N'Versión de plan a la que aplica el conjunto, si es un set por plan.'),
+    (N'COLUMN', N'ParameterSet', N'name', N'Nombre del conjunto de parámetros.'),
+    (N'COLUMN', N'ParameterSet', N'priority', N'Prioridad para resolver overrides cuando hay varios conjuntos aplicables.'),
+    (N'COLUMN', N'ParameterSet', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'COLUMN', N'ParameterSet', N'created_at_utc', N'Fecha y hora UTC de creación del registro.'),
+    (N'TABLE', N'ParameterValue', NULL, N'Valor concreto de un parámetro dentro de un conjunto. Usa columnas tipadas para mantener compatibilidad y facilitar validación.'),
+    (N'COLUMN', N'ParameterValue', N'parameter_value_id', N'Identificador técnico único del valor de parámetro.'),
+    (N'COLUMN', N'ParameterValue', N'parameter_set_id', N'Conjunto de parámetros al que pertenece el valor.'),
+    (N'COLUMN', N'ParameterValue', N'parameter_definition_id', N'Definición de parámetro que se está valorando.'),
+    (N'COLUMN', N'ParameterValue', N'value_int', N'Valor entero si el parámetro es de tipo INT.'),
+    (N'COLUMN', N'ParameterValue', N'value_decimal', N'Valor decimal si el parámetro es de tipo DECIMAL.'),
+    (N'COLUMN', N'ParameterValue', N'value_bool', N'Valor booleano si el parámetro es de tipo BOOLEAN.'),
+    (N'COLUMN', N'ParameterValue', N'value_text', N'Valor textual si el parámetro es de tipo TEXT.'),
+    (N'COLUMN', N'ParameterValue', N'value_json', N'Valor JSON si el parámetro es de tipo JSON.'),
+    (N'COLUMN', N'ParameterValue', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'ProtocolParameter', NULL, N'Relación documental entre protocolo y parámetros que utiliza. Ayuda a validar configuración antes de ejecutar protocolos.'),
+    (N'COLUMN', N'ProtocolParameter', N'protocol_parameter_id', N'Identificador técnico único de la relación protocolo-parámetro.'),
+    (N'COLUMN', N'ProtocolParameter', N'protocol_id', N'Protocolo que utiliza el parámetro.'),
+    (N'COLUMN', N'ProtocolParameter', N'parameter_definition_id', N'Parámetro requerido o utilizado por el protocolo.'),
+    (N'COLUMN', N'ProtocolParameter', N'usage_note', N'Nota que explica cómo usa el protocolo este parámetro.'),
+    (N'TABLE', N'Role', NULL, N'Rol operativo o administrativo de un usuario: operador, jefe de turno, mantenimiento, supervisor, etc.'),
+    (N'COLUMN', N'Role', N'role_id', N'Identificador técnico único del rol.'),
+    (N'COLUMN', N'Role', N'name', N'Nombre único del rol.'),
+    (N'COLUMN', N'Role', N'description', N'Descripción de permisos o responsabilidades del rol.'),
+    (N'COLUMN', N'Role', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'UserAccount', NULL, N'Usuario de la aplicación o consola operativa. La autenticación puede estar en la aplicación, pero aquí queda la identidad operativa.'),
+    (N'COLUMN', N'UserAccount', N'user_id', N'Identificador técnico único del usuario.'),
+    (N'COLUMN', N'UserAccount', N'facility_id', N'Ámbito operativo al que pertenece el usuario.'),
+    (N'COLUMN', N'UserAccount', N'role_id', N'Rol asignado al usuario.'),
+    (N'COLUMN', N'UserAccount', N'username', N'Nombre de usuario o login.'),
+    (N'COLUMN', N'UserAccount', N'display_name', N'Nombre visible del usuario.'),
+    (N'COLUMN', N'UserAccount', N'phone', N'Teléfono de contacto.'),
+    (N'COLUMN', N'UserAccount', N'email', N'Correo electrónico.'),
+    (N'COLUMN', N'UserAccount', N'is_active', N'Indica si el usuario está activo.'),
+    (N'COLUMN', N'UserAccount', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'COLUMN', N'UserAccount', N'created_at_utc', N'Fecha y hora UTC de creación del registro.'),
+    (N'TABLE', N'Agency', NULL, N'Organismo o entidad interna/externa que puede ser avisada o participar en la respuesta: emergencias, tráfico, mantenimiento, centro de control, etc.'),
+    (N'COLUMN', N'Agency', N'agency_id', N'Identificador técnico único del organismo.'),
+    (N'COLUMN', N'Agency', N'name', N'Nombre del organismo o entidad.'),
+    (N'COLUMN', N'Agency', N'agency_type', N'Tipo: EMERGENCY_SERVICES, TRAFFIC_AUTHORITY, CONTROL_CENTER, MAINTENANCE u OTHER.'),
+    (N'COLUMN', N'Agency', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'ContactPoint', NULL, N'Punto de contacto de un organismo: teléfono, radio, email, SMS, endpoint API u otro canal.'),
+    (N'COLUMN', N'ContactPoint', N'contact_point_id', N'Identificador técnico único del punto de contacto.'),
+    (N'COLUMN', N'ContactPoint', N'agency_id', N'Organismo al que pertenece el contacto.'),
+    (N'COLUMN', N'ContactPoint', N'name', N'Nombre o etiqueta del contacto.'),
+    (N'COLUMN', N'ContactPoint', N'channel', N'Canal: PHONE, EMAIL, RADIO, API, SMS u OTHER.'),
+    (N'COLUMN', N'ContactPoint', N'address', N'Valor del contacto: teléfono, email, endpoint, canal de radio, etc.'),
+    (N'COLUMN', N'ContactPoint', N'availability', N'Disponibilidad horaria o condición de uso.'),
+    (N'COLUMN', N'ContactPoint', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'IncidentEvent', NULL, N'Incidente real registrado en explotación. Une túnel, tipo de incidente, estado, tiempos, notas y datos operativos.'),
+    (N'COLUMN', N'IncidentEvent', N'incident_event_id', N'Identificador técnico único del incidente real.'),
+    (N'COLUMN', N'IncidentEvent', N'incident_type_id', N'Tipo de incidente catalogado.'),
+    (N'COLUMN', N'IncidentEvent', N'tunnel_id', N'Túnel donde ocurre el incidente.'),
+    (N'COLUMN', N'IncidentEvent', N'incident_status', N'Estado del incidente: OPEN, MITIGATING, RESOLVED o CLOSED.'),
+    (N'COLUMN', N'IncidentEvent', N'started_at_utc', N'Fecha/hora UTC de inicio o apertura del incidente.'),
+    (N'COLUMN', N'IncidentEvent', N'detected_at_utc', N'Fecha/hora UTC de detección si difiere de la apertura.'),
+    (N'COLUMN', N'IncidentEvent', N'resolved_at_utc', N'Fecha/hora UTC de resolución.'),
+    (N'COLUMN', N'IncidentEvent', N'severity_override', N'Reclasificación manual de severidad si el operador la aplica.'),
+    (N'COLUMN', N'IncidentEvent', N'summary', N'Resumen corto del incidente.'),
+    (N'COLUMN', N'IncidentEvent', N'operator_notes', N'Notas libres del operador.'),
+    (N'COLUMN', N'IncidentEvent', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'DetectionEvent', NULL, N'Evidencia o evento de detección asociado a un incidente: sensor, CCTV/DAI, alarma SCADA, llamada SOS, aviso externo u observación del operador.'),
+    (N'COLUMN', N'DetectionEvent', N'detection_event_id', N'Identificador técnico único del evento de detección.'),
+    (N'COLUMN', N'DetectionEvent', N'incident_event_id', N'Incidente al que pertenece la evidencia.'),
+    (N'COLUMN', N'DetectionEvent', N'source_type', N'Origen: SENSOR, CCTV_DAI, SCADA_ALARM, SOS_CALL, EXTERNAL_CALL u OPERATOR_OBS.'),
+    (N'COLUMN', N'DetectionEvent', N'source_asset_id', N'Activo que generó la detección, si aplica.'),
+    (N'COLUMN', N'DetectionEvent', N'reported_by', N'Persona, servicio, centro o sistema que reporta la detección.'),
+    (N'COLUMN', N'DetectionEvent', N'payload_json', N'Datos de detección en JSON: medidas, alarmas, valores, texto, etc.'),
+    (N'COLUMN', N'DetectionEvent', N'created_at_utc', N'Fecha/hora UTC de registro de la detección.'),
+    (N'TABLE', N'IncidentLocation', NULL, N'Relación N:M entre incidente y localización. Permite indicar varias ubicaciones, ubicación principal y grado de confianza.'),
+    (N'COLUMN', N'IncidentLocation', N'incident_location_id', N'Identificador técnico único de la relación incidente-localización.'),
+    (N'COLUMN', N'IncidentLocation', N'incident_event_id', N'Incidente localizado.'),
+    (N'COLUMN', N'IncidentLocation', N'location_id', N'Localización asociada al incidente.'),
+    (N'COLUMN', N'IncidentLocation', N'confidence', N'Confianza de la localización entre 0 y 1.'),
+    (N'COLUMN', N'IncidentLocation', N'is_primary', N'Indica si es la localización principal del incidente.'),
+    (N'COLUMN', N'IncidentLocation', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'ProtocolRun', NULL, N'Ejecución concreta de un protocolo para un incidente real. Guarda estado, usuario iniciador, paso actual y snapshot de contexto.'),
+    (N'COLUMN', N'ProtocolRun', N'protocol_run_id', N'Identificador técnico único de la ejecución del protocolo.'),
+    (N'COLUMN', N'ProtocolRun', N'incident_event_id', N'Incidente gestionado por esta ejecución.'),
+    (N'COLUMN', N'ProtocolRun', N'protocol_id', N'Protocolo que se está ejecutando.'),
+    (N'COLUMN', N'ProtocolRun', N'started_by_user_id', N'Usuario que inició la ejecución.'),
+    (N'COLUMN', N'ProtocolRun', N'started_at_utc', N'Fecha/hora UTC de inicio de la ejecución.'),
+    (N'COLUMN', N'ProtocolRun', N'ended_at_utc', N'Fecha/hora UTC de finalización.'),
+    (N'COLUMN', N'ProtocolRun', N'run_status', N'Estado de ejecución: RUNNING, PAUSED, COMPLETED o ABORTED.'),
+    (N'COLUMN', N'ProtocolRun', N'current_step_id', N'Paso actual dentro del protocolo.'),
+    (N'COLUMN', N'ProtocolRun', N'context_snapshot_json', N'Snapshot JSON de contexto: parámetros resueltos, estado de activos, datos del incidente, etc.'),
+    (N'COLUMN', N'ProtocolRun', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'ActionExecution', NULL, N'Acción concreta solicitada, enviada, ejecutada o fallida durante una ejecución de protocolo.'),
+    (N'COLUMN', N'ActionExecution', N'action_execution_id', N'Identificador técnico único de la ejecución de acción.'),
+    (N'COLUMN', N'ActionExecution', N'protocol_run_id', N'Ejecución de protocolo a la que pertenece.'),
+    (N'COLUMN', N'ActionExecution', N'action_definition_id', N'Acción definida que se ejecuta.'),
+    (N'COLUMN', N'ActionExecution', N'step_id', N'Paso que disparó la acción.'),
+    (N'COLUMN', N'ActionExecution', N'requested_at_utc', N'Fecha/hora UTC en que se solicitó la acción.'),
+    (N'COLUMN', N'ActionExecution', N'executed_at_utc', N'Fecha/hora UTC en que se ejecutó o se confirmó.'),
+    (N'COLUMN', N'ActionExecution', N'exec_status', N'Estado: REQUESTED, SENT, SUCCESS, FAILED o CANCELLED.'),
+    (N'COLUMN', N'ActionExecution', N'payload_json', N'Payload JSON real enviado o registrado para ejecutar la acción.'),
+    (N'COLUMN', N'ActionExecution', N'result_json', N'Resultado JSON devuelto por el sistema o integración.'),
+    (N'COLUMN', N'ActionExecution', N'error_message', N'Mensaje de error si la acción falla.'),
+    (N'TABLE', N'ActionTarget', NULL, N'Equipos o activos afectados por una acción concreta. Permite una acción sobre múltiples objetivos.'),
+    (N'COLUMN', N'ActionTarget', N'action_target_id', N'Identificador técnico único del objetivo de acción.'),
+    (N'COLUMN', N'ActionTarget', N'action_execution_id', N'Ejecución de acción que afecta al activo.'),
+    (N'COLUMN', N'ActionTarget', N'asset_id', N'Activo objetivo de la acción.'),
+    (N'COLUMN', N'ActionTarget', N'target_role', N'Papel del activo en la acción, por ejemplo PMV entrada o ventilador sector 2.'),
+    (N'COLUMN', N'ActionTarget', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'Notification', NULL, N'Notificación real enviada o pendiente dentro de una ejecución de protocolo.'),
+    (N'COLUMN', N'Notification', N'notification_id', N'Identificador técnico único de la notificación.'),
+    (N'COLUMN', N'Notification', N'protocol_run_id', N'Ejecución de protocolo que origina la notificación.'),
+    (N'COLUMN', N'Notification', N'contact_point_id', N'Punto de contacto destinatario.'),
+    (N'COLUMN', N'Notification', N'notification_rule_id', N'Regla de notificación aplicada, si procede.'),
+    (N'COLUMN', N'Notification', N'sent_at_utc', N'Fecha/hora UTC de envío.'),
+    (N'COLUMN', N'Notification', N'notif_status', N'Estado: PENDING, SENT, FAILED o ACKED.'),
+    (N'COLUMN', N'Notification', N'message', N'Mensaje final enviado o preparado.'),
+    (N'COLUMN', N'Notification', N'ack_at_utc', N'Fecha/hora UTC de acuse o confirmación.'),
+    (N'COLUMN', N'Notification', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'WorkOrder', NULL, N'Orden de trabajo o mantenimiento asociada a un activo y opcionalmente generada desde un incidente.'),
+    (N'COLUMN', N'WorkOrder', N'work_order_id', N'Identificador técnico único de la orden de trabajo.'),
+    (N'COLUMN', N'WorkOrder', N'asset_id', N'Activo afectado por la orden.'),
+    (N'COLUMN', N'WorkOrder', N'created_from_incident_id', N'Incidente que originó la orden si aplica.'),
+    (N'COLUMN', N'WorkOrder', N'priority', N'Prioridad: LOW, MEDIUM, HIGH o URGENT.'),
+    (N'COLUMN', N'WorkOrder', N'work_status', N'Estado: OPEN, IN_PROGRESS, DONE o CANCELLED.'),
+    (N'COLUMN', N'WorkOrder', N'description', N'Descripción del trabajo o incidencia técnica.'),
+    (N'COLUMN', N'WorkOrder', N'created_at_utc', N'Fecha/hora UTC de creación de la orden.'),
+    (N'COLUMN', N'WorkOrder', N'closed_at_utc', N'Fecha/hora UTC de cierre.'),
+    (N'COLUMN', N'WorkOrder', N'meta_json', N'Datos adicionales flexibles en JSON.'),
+    (N'TABLE', N'AuditLog', NULL, N'Registro de auditoría legal/operativa: cambios, ejecuciones, overrides y acciones relevantes del usuario o del sistema.'),
+    (N'COLUMN', N'AuditLog', N'audit_log_id', N'Identificador técnico único del evento de auditoría.'),
+    (N'COLUMN', N'AuditLog', N'user_id', N'Usuario que realiza la acción, si aplica.'),
+    (N'COLUMN', N'AuditLog', N'incident_event_id', N'Incidente relacionado con la acción auditada, si aplica.'),
+    (N'COLUMN', N'AuditLog', N'entity_type', N'Tipo de entidad afectada, por ejemplo ProtocolRun, Asset o IncidentEvent.'),
+    (N'COLUMN', N'AuditLog', N'entity_id', N'Identificador de la entidad afectada.'),
+    (N'COLUMN', N'AuditLog', N'action', N'Acción realizada: CREATE, UPDATE, EXECUTE, OVERRIDE, etc.'),
+    (N'COLUMN', N'AuditLog', N'timestamp_utc', N'Fecha/hora UTC del evento auditado.'),
+    (N'COLUMN', N'AuditLog', N'details_json', N'Detalles de auditoría en JSON.'),
+    (N'TABLE', N'DatabaseDocumentation', NULL, N'Diccionario interno de la base de datos. Permite consultar desde SQL Server para qué sirve cada tabla y cada columna sin depender únicamente del script.'),
+    (N'COLUMN', N'DatabaseDocumentation', N'documentation_id', N'Identificador incremental de cada entrada de documentación.'),
+    (N'COLUMN', N'DatabaseDocumentation', N'object_type', N'Tipo de objeto documentado. Valores previstos: TABLE o COLUMN.'),
+    (N'COLUMN', N'DatabaseDocumentation', N'table_name', N'Nombre de la tabla documentada.'),
+    (N'COLUMN', N'DatabaseDocumentation', N'column_name', N'Nombre de la columna documentada. Es NULL cuando se documenta una tabla completa.'),
+    (N'COLUMN', N'DatabaseDocumentation', N'description', N'Texto descriptivo del objeto documentado.'),
+    (N'COLUMN', N'DatabaseDocumentation', N'created_at_utc', N'Fecha y hora UTC en la que se creó la entrada documental.')
+END
 
 
 -------------------------------------------------------------------------------
@@ -2230,68 +2038,68 @@ FROM tunnel.v_ColumnDocumentation;
 IF NOT EXISTS (SELECT 1 FROM tunnel.[Role] WHERE name = N'OPERADOR')
 BEGIN
     INSERT INTO tunnel.[Role] (name, description)
-    VALUES (N'OPERADOR', N'Usuario operativo de consola o centro de control.');
-END;
+    VALUES (N'OPERADOR', N'Usuario operativo de consola o centro de control.')
+END
 
 IF NOT EXISTS (SELECT 1 FROM tunnel.[Role] WHERE name = N'JEFE_TURNO')
 BEGIN
     INSERT INTO tunnel.[Role] (name, description)
-    VALUES (N'JEFE_TURNO', N'Responsable operativo del turno.');
-END;
+    VALUES (N'JEFE_TURNO', N'Responsable operativo del turno.')
+END
 
 IF NOT EXISTS (SELECT 1 FROM tunnel.[Role] WHERE name = N'MANTENIMIENTO')
 BEGIN
     INSERT INTO tunnel.[Role] (name, description)
-    VALUES (N'MANTENIMIENTO', N'Personal o equipo responsable de mantenimiento.');
-END;
+    VALUES (N'MANTENIMIENTO', N'Personal o equipo responsable de mantenimiento.')
+END
 
 IF NOT EXISTS (SELECT 1 FROM tunnel.EmergencyLevel WHERE name = N'PREALERTA')
 BEGIN
     INSERT INTO tunnel.EmergencyLevel (name, rank, description)
-    VALUES (N'PREALERTA', 1, N'Situación inicial, anomalía o incidente de menor gravedad.');
-END;
+    VALUES (N'PREALERTA', 1, N'Situación inicial, anomalía o incidente de menor gravedad.')
+END
 
 IF NOT EXISTS (SELECT 1 FROM tunnel.EmergencyLevel WHERE name = N'ALERTA')
 BEGIN
     INSERT INTO tunnel.EmergencyLevel (name, rank, description)
-    VALUES (N'ALERTA', 2, N'Situación que requiere seguimiento operativo y posible activación de recursos.');
-END;
+    VALUES (N'ALERTA', 2, N'Situación que requiere seguimiento operativo y posible activación de recursos.')
+END
 
 IF NOT EXISTS (SELECT 1 FROM tunnel.EmergencyLevel WHERE name = N'EMERGENCIA')
 BEGIN
     INSERT INTO tunnel.EmergencyLevel (name, rank, description)
-    VALUES (N'EMERGENCIA', 3, N'Situación grave que requiere actuación coordinada y/o servicios externos.');
-END;
+    VALUES (N'EMERGENCIA', 3, N'Situación grave que requiere actuación coordinada y/o servicios externos.')
+END
 
 IF NOT EXISTS (SELECT 1 FROM tunnel.IncidentFamily WHERE code = N'TRA')
 BEGIN
     INSERT INTO tunnel.IncidentFamily (code, name, description)
-    VALUES (N'TRA', N'Tráfico', N'Incidentes de circulación, retenciones, accidentes y afectaciones viarias.');
-END;
+    VALUES (N'TRA', N'Tráfico', N'Incidentes de circulación, retenciones, accidentes y afectaciones viarias.')
+END
 
 IF NOT EXISTS (SELECT 1 FROM tunnel.IncidentFamily WHERE code = N'AVA')
 BEGIN
     INSERT INTO tunnel.IncidentFamily (code, name, description)
-    VALUES (N'AVA', N'Avería', N'Averías técnicas, pérdida de sistemas, fallos de control o equipamiento.');
-END;
+    VALUES (N'AVA', N'Avería', N'Averías técnicas, pérdida de sistemas, fallos de control o equipamiento.')
+END
 
 IF NOT EXISTS (SELECT 1 FROM tunnel.IncidentFamily WHERE code = N'FOC')
 BEGIN
     INSERT INTO tunnel.IncidentFamily (code, name, description)
-    VALUES (N'FOC', N'Incendio', N'Fuego, humo, incendio de vehículo o incendio en instalaciones.');
-END;
+    VALUES (N'FOC', N'Incendio', N'Fuego, humo, incendio de vehículo o incendio en instalaciones.')
+END
 
 IF NOT EXISTS (SELECT 1 FROM tunnel.IncidentFamily WHERE code = N'AMB')
 BEGIN
     INSERT INTO tunnel.IncidentFamily (code, name, description)
-    VALUES (N'AMB', N'Ambiental', N'Condiciones ambientales: CO, NOx, opacidad, ventilación o calidad del aire.');
-END;
+    VALUES (N'AMB', N'Ambiental', N'Condiciones ambientales: CO, NOx, opacidad, ventilación o calidad del aire.')
+END
 
 IF NOT EXISTS (SELECT 1 FROM tunnel.IncidentFamily WHERE code = N'ILI')
 BEGIN
     INSERT INTO tunnel.IncidentFamily (code, name, description)
-    VALUES (N'ILI', N'Iluminación', N'Incidencias relacionadas con iluminación normal, emergencia o túnel.');
-END;
+    VALUES (N'ILI', N'Iluminación', N'Incidencias relacionadas con iluminación normal, emergencia o túnel.')
+END
 
 IF NOT EXISTS (SELECT 1 FROM tunnel.CodeScheme WHERE name = N'GENERIC_TUNNEL_SAFETY')
 BEGIN
@@ -2300,31 +2108,12 @@ BEGIN
         N'GENERIC_TUNNEL_SAFETY',
         N'Esquema genérico adaptable a protocolos de seguridad de túneles.',
         N'[nivel]-[familia]-[variante opcional]'
-    );
-END;
-
-COMMIT;
-PRINT N'Creación/validación de TunnelSafetyDB finalizada correctamente.';
-END TRY
-BEGIN CATCH
-    IF @@TRANCOUNT > 0 ROLLBACK;
-
-    DECLARE @ErrMsg NVARCHAR(4000) = ERROR_MESSAGE();
-    DECLARE @ErrNum INT = ERROR_NUMBER();
-    DECLARE @ErrLine INT = ERROR_LINE();
-
-    PRINT N'ERROR creando TunnelSafetyDB.';
-    PRINT N'Número: ' + CAST(@ErrNum AS NVARCHAR(20));
-    PRINT N'Línea: ' + CAST(@ErrLine AS NVARCHAR(20));
-    PRINT N'Mensaje: ' + @ErrMsg;
-
-    THROW;
-END CATCH;
+    )
+END
 
 -------------------------------------------------------------------------------
 -- 10) COMPROBACIÓN FINAL
 -------------------------------------------------------------------------------
-PRINT N'Comprobación final de tablas creadas en [TunnelSafetyDB].[tunnel]';
 
 SELECT
     DB_NAME() AS current_database,
@@ -2333,15 +2122,18 @@ SELECT
 FROM sys.tables t
 JOIN sys.schemas s ON s.schema_id = t.schema_id
 WHERE s.name = N'tunnel'
-ORDER BY t.name;
+ORDER BY t.name
 
 SELECT
     COUNT(*) AS tunnel_schema_table_count
 FROM sys.tables t
 JOIN sys.schemas s ON s.schema_id = t.schema_id
-WHERE s.name = N'tunnel';
+WHERE s.name = N'tunnel'
 
-PRINT N'Consulta de documentación disponible:';
-PRINT N'SELECT * FROM tunnel.v_TableDocumentation ORDER BY table_name;';
-PRINT N'SELECT * FROM tunnel.v_ColumnDocumentation ORDER BY table_name, column_id;';
-PRINT N'SELECT * FROM tunnel.v_DatabaseDictionary ORDER BY table_name, item_type, column_id;';
+SELECT
+    table_name,
+    column_name,
+    description
+FROM tunnel.DatabaseDocumentation
+ORDER BY table_name, object_type, column_name
+GO

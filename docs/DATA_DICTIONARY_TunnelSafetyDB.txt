@@ -1,0 +1,1921 @@
+TunnelSafetyDB - Diccionario de datos
+================================================================================
+Generado: 2026-05-09 17:42:42 UTC
+
+RESUMEN DE TABLAS
+--------------------------------------------------------------------------------
+- tunnel.ActionDefinition: Catálogo de acciones atómicas ejecutables o registrables: señalización, semáforos, cierre, ventilación, iluminación, megafonía, orden de trabajo, aviso externo, etc.
+- tunnel.ActionExecution: Acción concreta solicitada, enviada, ejecutada o fallida durante una ejecución de protocolo.
+- tunnel.ActionTarget: Equipos o activos afectados por una acción concreta. Permite una acción sobre múltiples objetivos.
+- tunnel.Agency: Organismo o entidad interna/externa que puede ser avisada o participar en la respuesta: emergencias, tráfico, mantenimiento, centro de control, etc.
+- tunnel.Asset: Activo físico o lógico instalado o supervisado: cámara, sensor, ventilador, luminaria, PMV, semáforo, sistema SOS, etc.
+- tunnel.AssetInstallation: Instalación de un activo en una localización concreta, con cobertura, orientación y relación con tubo si aplica.
+- tunnel.AssetType: Catálogo de tipos de equipamiento independientes de fabricante: CCTV, DAI, SCADA, ventilación, iluminación, PMV, semáforos, SOS, sensores, etc.
+- tunnel.AuditLog: Registro de auditoría legal/operativa: cambios, ejecuciones, overrides y acciones relevantes del usuario o del sistema.
+- tunnel.CodeScheme: Esquema de codificación de incidentes. Permite soportar códigos locales como 100-TRA o esquemas de otros países/operadores.
+- tunnel.ContactPoint: Punto de contacto de un organismo: teléfono, radio, email, SMS, endpoint API u otro canal.
+- tunnel.ControlSystem: Sistema de control o supervisión que gobierna o monitoriza activos: SCADA, CCTV/VMS, DAI, ATMS, BMS u otros.
+- tunnel.DatabaseDocumentation: Diccionario interno de la base de datos. Permite consultar desde SQL Server para qué sirve cada tabla y cada columna sin depender únicamente del script.
+- tunnel.DetectionEvent: Evidencia o evento de detección asociado a un incidente: sensor, CCTV/DAI, alarma SCADA, llamada SOS, aviso externo u observación del operador.
+- tunnel.EmergencyLevel: Nivel de gravedad o activación: prealerta, alerta, emergencia u otros niveles configurables.
+- tunnel.Facility: Ámbito operativo gestionado por una organización: red urbana, concesión, centro de control, autopista o instalación equivalente.
+- tunnel.IncidentEvent: Incidente real registrado en explotación. Une túnel, tipo de incidente, estado, tiempos, notas y datos operativos.
+- tunnel.IncidentFamily: Familia funcional de incidentes: tráfico, avería, incendio, ambiental, iluminación u otras.
+- tunnel.IncidentLocation: Relación N:M entre incidente y localización. Permite indicar varias ubicaciones, ubicación principal y grado de confianza.
+- tunnel.IncidentType: Tipo de incidente catalogado. Es la clasificación que permite seleccionar el protocolo adecuado.
+- tunnel.Location: Localización operativa dentro de un túnel: boca, tramo, punto kilométrico, sala técnica, salida de emergencia, poste SOS, cámara u otro punto relevante.
+- tunnel.Notification: Notificación real enviada o pendiente dentro de una ejecución de protocolo.
+- tunnel.NotificationRule: Regla o plantilla de aviso a organismos, centros de control, mantenimiento u otros contactos.
+- tunnel.Organization: Organización propietaria, gestora o concesionaria responsable de una o varias instalaciones o redes de túneles.
+- tunnel.ParameterDefinition: Definición global de un parámetro configurable: umbrales, límites, tiempos, modos o reglas reutilizables.
+- tunnel.ParameterSet: Colección de valores de parámetros aplicable a un túnel o a una versión de plan. Sirve para overrides y personalización.
+- tunnel.ParameterValue: Valor concreto de un parámetro dentro de un conjunto. Usa columnas tipadas para mantener compatibilidad y facilitar validación.
+- tunnel.Plan: Plan documental u operativo: PAU, Plan de Emergencia o conjunto de protocolos de explotación.
+- tunnel.PlanTunnelScope: Relación entre una versión de plan y los túneles cubiertos por ella. Permite que un plan cubra varios túneles y viceversa.
+- tunnel.PlanVersion: Versión concreta de un plan, con vigencia, aprobación y estado. Permite gestionar revisiones y trazabilidad normativa.
+- tunnel.Protocol: Plantilla de actuación asociada a una versión de plan y a un tipo de incidente.
+- tunnel.ProtocolParameter: Relación documental entre protocolo y parámetros que utiliza. Ayuda a validar configuración antes de ejecutar protocolos.
+- tunnel.ProtocolRun: Ejecución concreta de un protocolo para un incidente real. Guarda estado, usuario iniciador, paso actual y snapshot de contexto.
+- tunnel.ProtocolStep: Nodo del flujo de trabajo de un protocolo: decisión, acción, espera, información o checklist.
+- tunnel.Role: Rol operativo o administrativo de un usuario: operador, jefe de turno, mantenimiento, supervisor, etc.
+- tunnel.StepAction: Relación entre un paso de protocolo y una acción definida. Permite ejecutar varias acciones ordenadas por cada paso.
+- tunnel.StepNotification: Relación entre un paso de protocolo y una regla de notificación. Define cuándo y bajo qué condición se envía un aviso.
+- tunnel.StepTransition: Transición dirigida entre pasos de un protocolo. Permite modelar decisiones condicionales, ramas y rutas alternativas.
+- tunnel.Tube: Tubo, sentido o calzada interna de un túnel. Permite modelar túneles de uno o varios tubos y sentidos de circulación.
+- tunnel.Tunnel: Túnel físico individual. Representa la infraestructura principal y permite vincular tubos, zonas, localizaciones, planes e incidencias.
+- tunnel.UserAccount: Usuario de la aplicación o consola operativa. La autenticación puede estar en la aplicación, pero aquí queda la identidad operativa.
+- tunnel.WorkOrder: Orden de trabajo o mantenimiento asociada a un activo y opcionalmente generada desde un incidente.
+- tunnel.Zone: Sectorización interna de un tubo: zona operativa, compartimento de incendio, zona de evacuación, zona vulnerable o tramo de riesgo.
+
+DETALLE POR TABLA
+================================================================================
+
+tunnel.ActionDefinition
+-----------------------
+Catálogo de acciones atómicas ejecutables o registrables: señalización, semáforos, cierre, ventilación, iluminación, megafonía, orden de trabajo, aviso externo, etc.
+
+  - action_definition_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único de la acción definida.
+  - action_type
+      Tipo: NVARCHAR(30)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Tipo de acción: SET_SIGNAGE, SET_SEMAPHORE, CLOSE_TUBE, VENTILATION_MODE, LIGHTING_MODE, PA_ANNOUNCEMENT, CREATE_WORK_ORDER, REQUEST_EXTERNAL, LOG_ONLY u OTHER.
+  - name
+      Tipo: NVARCHAR(200)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Nombre operativo de la acción.
+  - description
+      Tipo: NVARCHAR(400)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Descripción de qué hace la acción.
+  - payload_schema_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Esquema JSON de los parámetros necesarios para ejecutar la acción.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.ActionExecution
+----------------------
+Acción concreta solicitada, enviada, ejecutada o fallida durante una ejecución de protocolo.
+
+  - action_execution_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único de la ejecución de acción.
+  - protocol_run_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Ejecución de protocolo a la que pertenece.
+  - action_definition_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Acción definida que se ejecuta.
+  - step_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Paso que disparó la acción.
+  - requested_at_utc
+      Tipo: DATETIME2(3)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: SYSUTCDATETIME()
+      Descripción: Fecha/hora UTC en que se solicitó la acción.
+  - executed_at_utc
+      Tipo: DATETIME2(3)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Fecha/hora UTC en que se ejecutó o se confirmó.
+  - exec_status
+      Tipo: NVARCHAR(12)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: ('REQUESTED')
+      Descripción: Estado: REQUESTED, SENT, SUCCESS, FAILED o CANCELLED.
+  - payload_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Payload JSON real enviado o registrado para ejecutar la acción.
+  - result_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Resultado JSON devuelto por el sistema o integración.
+  - error_message
+      Tipo: NVARCHAR(400)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Mensaje de error si la acción falla.
+
+tunnel.ActionTarget
+-------------------
+Equipos o activos afectados por una acción concreta. Permite una acción sobre múltiples objetivos.
+
+  - action_target_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único del objetivo de acción.
+  - action_execution_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Ejecución de acción que afecta al activo.
+  - asset_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Activo objetivo de la acción.
+  - target_role
+      Tipo: NVARCHAR(200)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Papel del activo en la acción, por ejemplo PMV entrada o ventilador sector 2.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.Agency
+-------------
+Organismo o entidad interna/externa que puede ser avisada o participar en la respuesta: emergencias, tráfico, mantenimiento, centro de control, etc.
+
+  - agency_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único del organismo.
+  - name
+      Tipo: NVARCHAR(200)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Nombre del organismo o entidad.
+  - agency_type
+      Tipo: NVARCHAR(30)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Tipo: EMERGENCY_SERVICES, TRAFFIC_AUTHORITY, CONTROL_CENTER, MAINTENANCE u OTHER.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.Asset
+------------
+Activo físico o lógico instalado o supervisado: cámara, sensor, ventilador, luminaria, PMV, semáforo, sistema SOS, etc.
+
+  - asset_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único del activo.
+  - asset_type_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Tipo de activo al que pertenece.
+  - control_system_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Sistema de control que supervisa o controla el activo.
+  - asset_tag
+      Tipo: NVARCHAR(120)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Etiqueta de inventario única del activo.
+  - manufacturer
+      Tipo: NVARCHAR(120)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Fabricante del activo.
+  - model
+      Tipo: NVARCHAR(120)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Modelo del activo.
+  - serial_number
+      Tipo: NVARCHAR(120)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Número de serie.
+  - criticality
+      Tipo: NVARCHAR(20)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: ('MEDIUM')
+      Descripción: Criticidad operativa: LOW, MEDIUM, HIGH o SAFETY_CRITICAL.
+  - asset_status
+      Tipo: NVARCHAR(20)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: ('OK')
+      Descripción: Estado del activo: OK, DEGRADED, FAILED o MAINTENANCE.
+  - last_healthcheck_at_utc
+      Tipo: DATETIME2(3)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Última fecha/hora UTC de comprobación, telemetría o heartbeat.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.AssetInstallation
+------------------------
+Instalación de un activo en una localización concreta, con cobertura, orientación y relación con tubo si aplica.
+
+  - asset_installation_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único de la instalación del activo.
+  - asset_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Activo instalado.
+  - location_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Localización donde está instalado el activo.
+  - tube_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Tubo asociado a la instalación si aplica.
+  - installed_at
+      Tipo: DATE
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Fecha de instalación.
+  - coverage_start_chainage_m
+      Tipo: DECIMAL(12,3)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Inicio de cobertura del activo en metros.
+  - coverage_end_chainage_m
+      Tipo: DECIMAL(12,3)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Fin de cobertura del activo en metros.
+  - orientation
+      Tipo: NVARCHAR(80)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Orientación física o lógica del activo.
+  - is_primary
+      Tipo: BIT
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: (0)
+      Descripción: Indica si es la instalación principal del activo.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.AssetType
+----------------
+Catálogo de tipos de equipamiento independientes de fabricante: CCTV, DAI, SCADA, ventilación, iluminación, PMV, semáforos, SOS, sensores, etc.
+
+  - asset_type_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único del tipo de activo.
+  - category
+      Tipo: NVARCHAR(30)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Categoría funcional normalizada del activo.
+  - name
+      Tipo: NVARCHAR(120)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Nombre concreto del tipo de activo.
+  - vendor_independent
+      Tipo: BIT
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: (1)
+      Descripción: Indica si el tipo es independiente de fabricante.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.AuditLog
+---------------
+Registro de auditoría legal/operativa: cambios, ejecuciones, overrides y acciones relevantes del usuario o del sistema.
+
+  - audit_log_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único del evento de auditoría.
+  - user_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Usuario que realiza la acción, si aplica.
+  - incident_event_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Incidente relacionado con la acción auditada, si aplica.
+  - entity_type
+      Tipo: NVARCHAR(60)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Tipo de entidad afectada, por ejemplo ProtocolRun, Asset o IncidentEvent.
+  - entity_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Identificador de la entidad afectada.
+  - action
+      Tipo: NVARCHAR(40)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Acción realizada: CREATE, UPDATE, EXECUTE, OVERRIDE, etc.
+  - timestamp_utc
+      Tipo: DATETIME2(3)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: SYSUTCDATETIME()
+      Descripción: Fecha/hora UTC del evento auditado.
+  - details_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Detalles de auditoría en JSON.
+
+tunnel.CodeScheme
+-----------------
+Esquema de codificación de incidentes. Permite soportar códigos locales como 100-TRA o esquemas de otros países/operadores.
+
+  - code_scheme_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único del esquema de códigos.
+  - name
+      Tipo: NVARCHAR(120)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Nombre del esquema de codificación.
+  - description
+      Tipo: NVARCHAR(400)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Descripción funcional del esquema.
+  - pattern_hint
+      Tipo: NVARCHAR(200)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Pista de patrón o formato, por ejemplo una regex o estructura esperada.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.ContactPoint
+-------------------
+Punto de contacto de un organismo: teléfono, radio, email, SMS, endpoint API u otro canal.
+
+  - contact_point_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único del punto de contacto.
+  - agency_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Organismo al que pertenece el contacto.
+  - name
+      Tipo: NVARCHAR(200)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Nombre o etiqueta del contacto.
+  - channel
+      Tipo: NVARCHAR(12)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Canal: PHONE, EMAIL, RADIO, API, SMS u OTHER.
+  - address
+      Tipo: NVARCHAR(400)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Valor del contacto: teléfono, email, endpoint, canal de radio, etc.
+  - availability
+      Tipo: NVARCHAR(200)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Disponibilidad horaria o condición de uso.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.ControlSystem
+--------------------
+Sistema de control o supervisión que gobierna o monitoriza activos: SCADA, CCTV/VMS, DAI, ATMS, BMS u otros.
+
+  - control_system_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único del sistema de control.
+  - facility_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Ámbito operativo al que pertenece el sistema.
+  - name
+      Tipo: NVARCHAR(200)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Nombre operativo del sistema.
+  - system_type
+      Tipo: NVARCHAR(20)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Tipo de sistema: SCADA, VMS_CCTV, DAI, ATMS, BMS u OTHER.
+  - primary_site
+      Tipo: NVARCHAR(200)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Ubicación principal del sistema si aplica.
+  - has_backup
+      Tipo: BIT
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: (0)
+      Descripción: Indica si dispone de sistema o sala de respaldo.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.DatabaseDocumentation
+----------------------------
+Diccionario interno de la base de datos. Permite consultar desde SQL Server para qué sirve cada tabla y cada columna sin depender únicamente del script.
+
+  - documentation_id
+      Tipo: INT IDENTITY(1,1)
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Descripción: Identificador incremental de cada entrada de documentación.
+  - object_type
+      Tipo: NVARCHAR(20)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Tipo de objeto documentado. Valores previstos: TABLE o COLUMN.
+  - table_name
+      Tipo: NVARCHAR(128)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Nombre de la tabla documentada.
+  - column_name
+      Tipo: NVARCHAR(128)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Nombre de la columna documentada. Es NULL cuando se documenta una tabla completa.
+  - description
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Texto descriptivo del objeto documentado.
+  - created_at_utc
+      Tipo: DATETIME2(3)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: SYSUTCDATETIME()
+      Descripción: Fecha y hora UTC en la que se creó la entrada documental.
+
+tunnel.DetectionEvent
+---------------------
+Evidencia o evento de detección asociado a un incidente: sensor, CCTV/DAI, alarma SCADA, llamada SOS, aviso externo u observación del operador.
+
+  - detection_event_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único del evento de detección.
+  - incident_event_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Incidente al que pertenece la evidencia.
+  - source_type
+      Tipo: NVARCHAR(20)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Origen: SENSOR, CCTV_DAI, SCADA_ALARM, SOS_CALL, EXTERNAL_CALL u OPERATOR_OBS.
+  - source_asset_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Activo que generó la detección, si aplica.
+  - reported_by
+      Tipo: NVARCHAR(200)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Persona, servicio, centro o sistema que reporta la detección.
+  - payload_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos de detección en JSON: medidas, alarmas, valores, texto, etc.
+  - created_at_utc
+      Tipo: DATETIME2(3)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: SYSUTCDATETIME()
+      Descripción: Fecha/hora UTC de registro de la detección.
+
+tunnel.EmergencyLevel
+---------------------
+Nivel de gravedad o activación: prealerta, alerta, emergencia u otros niveles configurables.
+
+  - emergency_level_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único del nivel de emergencia.
+  - name
+      Tipo: NVARCHAR(30)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Nombre del nivel.
+  - rank
+      Tipo: INT
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Orden de gravedad o prioridad. A mayor valor, mayor nivel si así se configura.
+  - description
+      Tipo: NVARCHAR(400)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Descripción operativa del nivel.
+
+tunnel.Facility
+---------------
+Ámbito operativo gestionado por una organización: red urbana, concesión, centro de control, autopista o instalación equivalente.
+
+  - facility_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único del ámbito o instalación.
+  - organization_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Organización propietaria o gestora de la instalación.
+  - name
+      Tipo: NVARCHAR(200)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Nombre operativo de la instalación, red o centro de control.
+  - facility_type
+      Tipo: NVARCHAR(40)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Tipo de instalación: CITY_NETWORK, HIGHWAY_CONCESSION, SINGLE_TUNNEL o CONTROL_CENTER_SCOPE.
+  - address
+      Tipo: NVARCHAR(400)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Dirección física o descripción de ubicación si procede.
+  - timezone
+      Tipo: NVARCHAR(64)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Zona horaria propia del ámbito operativo.
+  - contact_phone
+      Tipo: NVARCHAR(50)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Teléfono general de contacto.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+  - created_at_utc
+      Tipo: DATETIME2(3)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: SYSUTCDATETIME()
+      Descripción: Fecha y hora UTC de creación del registro.
+
+tunnel.IncidentEvent
+--------------------
+Incidente real registrado en explotación. Une túnel, tipo de incidente, estado, tiempos, notas y datos operativos.
+
+  - incident_event_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único del incidente real.
+  - incident_type_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Tipo de incidente catalogado.
+  - tunnel_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Túnel donde ocurre el incidente.
+  - incident_status
+      Tipo: NVARCHAR(12)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: ('OPEN')
+      Descripción: Estado del incidente: OPEN, MITIGATING, RESOLVED o CLOSED.
+  - started_at_utc
+      Tipo: DATETIME2(3)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: SYSUTCDATETIME()
+      Descripción: Fecha/hora UTC de inicio o apertura del incidente.
+  - detected_at_utc
+      Tipo: DATETIME2(3)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Fecha/hora UTC de detección si difiere de la apertura.
+  - resolved_at_utc
+      Tipo: DATETIME2(3)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Fecha/hora UTC de resolución.
+  - severity_override
+      Tipo: NVARCHAR(30)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Reclasificación manual de severidad si el operador la aplica.
+  - summary
+      Tipo: NVARCHAR(400)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Resumen corto del incidente.
+  - operator_notes
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Notas libres del operador.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.IncidentFamily
+---------------------
+Familia funcional de incidentes: tráfico, avería, incendio, ambiental, iluminación u otras.
+
+  - incident_family_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único de la familia.
+  - code
+      Tipo: NVARCHAR(20)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Código corto de familia, por ejemplo TRA, AVA, FOC, AMB o ILI.
+  - name
+      Tipo: NVARCHAR(120)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Nombre de la familia.
+  - description
+      Tipo: NVARCHAR(400)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Descripción de los incidentes incluidos en la familia.
+
+tunnel.IncidentLocation
+-----------------------
+Relación N:M entre incidente y localización. Permite indicar varias ubicaciones, ubicación principal y grado de confianza.
+
+  - incident_location_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único de la relación incidente-localización.
+  - incident_event_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Incidente localizado.
+  - location_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Localización asociada al incidente.
+  - confidence
+      Tipo: DECIMAL(4,3)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: (1.000)
+      Descripción: Confianza de la localización entre 0 y 1.
+  - is_primary
+      Tipo: BIT
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: (0)
+      Descripción: Indica si es la localización principal del incidente.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.IncidentType
+-------------------
+Tipo de incidente catalogado. Es la clasificación que permite seleccionar el protocolo adecuado.
+
+  - incident_type_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único del tipo de incidente.
+  - code_scheme_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Esquema de codificación al que pertenece el código.
+  - emergency_level_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Nivel de emergencia asociado al tipo.
+  - incident_family_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Familia funcional del incidente.
+  - code_raw
+      Tipo: NVARCHAR(40)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Código textual del incidente, por ejemplo 260-AVA.
+  - title
+      Tipo: NVARCHAR(200)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Título operativo del incidente.
+  - description
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Descripción completa del tipo de incidente.
+  - detection_notes
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Notas sobre cómo detectar, verificar o confirmar el incidente.
+  - operational_context
+      Tipo: NVARCHAR(20)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: ('NORMAL')
+      Descripción: Contexto: NORMAL, WORKS, EVENT u OTHER.
+  - info_to_collect_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Campos o checklist que el operador debe recopilar, en JSON.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.Location
+---------------
+Localización operativa dentro de un túnel: boca, tramo, punto kilométrico, sala técnica, salida de emergencia, poste SOS, cámara u otro punto relevante.
+
+  - location_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único de la localización.
+  - tunnel_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Túnel al que pertenece la localización.
+  - zone_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Zona a la que pertenece la localización si aplica.
+  - location_type
+      Tipo: NVARCHAR(30)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Tipo: PORTAL, SEGMENT, LANE_POINT, TECH_ROOM, CROSS_PASSAGE, EMERGENCY_EXIT, SOS_POST, CAMERA_POLE u OTHER.
+  - name
+      Tipo: NVARCHAR(200)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Nombre o etiqueta de la localización.
+  - chainage_m
+      Tipo: DECIMAL(12,3)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Progresiva o referencia lineal en metros.
+  - geom
+      Tipo: GEOGRAPHY
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Coordenada geográfica opcional. Normalmente SRID 4326.
+  - access_description
+      Tipo: NVARCHAR(500)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Descripción de acceso para operadores o ayuda externa.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.Notification
+-------------------
+Notificación real enviada o pendiente dentro de una ejecución de protocolo.
+
+  - notification_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único de la notificación.
+  - protocol_run_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Ejecución de protocolo que origina la notificación.
+  - contact_point_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Punto de contacto destinatario.
+  - notification_rule_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Regla de notificación aplicada, si procede.
+  - sent_at_utc
+      Tipo: DATETIME2(3)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Fecha/hora UTC de envío.
+  - notif_status
+      Tipo: NVARCHAR(10)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: ('PENDING')
+      Descripción: Estado: PENDING, SENT, FAILED o ACKED.
+  - message
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Mensaje final enviado o preparado.
+  - ack_at_utc
+      Tipo: DATETIME2(3)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Fecha/hora UTC de acuse o confirmación.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.NotificationRule
+-----------------------
+Regla o plantilla de aviso a organismos, centros de control, mantenimiento u otros contactos.
+
+  - notification_rule_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único de la regla de notificación.
+  - name
+      Tipo: NVARCHAR(200)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Nombre de la regla.
+  - purpose
+      Tipo: NVARCHAR(400)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Finalidad del aviso.
+  - default_channel
+      Tipo: NVARCHAR(12)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Canal por defecto: PHONE, EMAIL, RADIO, API, SMS u OTHER.
+  - message_template
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Plantilla del mensaje con variables sustituibles por la aplicación.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.Organization
+-------------------
+Organización propietaria, gestora o concesionaria responsable de una o varias instalaciones o redes de túneles.
+
+  - organization_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único de la organización. Se usa como clave primaria y no debe cambiar.
+  - name
+      Tipo: NVARCHAR(200)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Nombre oficial o operativo de la organización.
+  - legal_id
+      Tipo: NVARCHAR(100)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Identificador legal/fiscal si aplica, por ejemplo CIF, NIF o identificador administrativo.
+  - country_code
+      Tipo: NVARCHAR(3)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Código de país ISO-3166 alfa-3, por ejemplo ESP.
+  - timezone_default
+      Tipo: NVARCHAR(64)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Zona horaria por defecto de la organización o ámbito principal.
+  - created_at_utc
+      Tipo: DATETIME2(3)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: SYSUTCDATETIME()
+      Descripción: Fecha y hora UTC de creación del registro.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Campo JSON extensible para datos adicionales no normalizados.
+
+tunnel.ParameterDefinition
+--------------------------
+Definición global de un parámetro configurable: umbrales, límites, tiempos, modos o reglas reutilizables.
+
+  - parameter_definition_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único de la definición de parámetro.
+  - key
+      Tipo: NVARCHAR(120)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Clave única del parámetro, estable para uso en código y configuración.
+  - data_type
+      Tipo: NVARCHAR(10)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Tipo de dato esperado: INT, DECIMAL, BOOLEAN, TEXT o JSON.
+  - unit
+      Tipo: NVARCHAR(32)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Unidad del parámetro si aplica, por ejemplo segundos, ppm, km/h o porcentaje.
+  - description
+      Tipo: NVARCHAR(400)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Descripción funcional del parámetro.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.ParameterSet
+-------------------
+Colección de valores de parámetros aplicable a un túnel o a una versión de plan. Sirve para overrides y personalización.
+
+  - parameter_set_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único del conjunto de parámetros.
+  - tunnel_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Túnel al que aplica el conjunto, si es un set por túnel.
+  - plan_version_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Versión de plan a la que aplica el conjunto, si es un set por plan.
+  - name
+      Tipo: NVARCHAR(200)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Nombre del conjunto de parámetros.
+  - priority
+      Tipo: INT
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: (0)
+      Descripción: Prioridad para resolver overrides cuando hay varios conjuntos aplicables.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+  - created_at_utc
+      Tipo: DATETIME2(3)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: SYSUTCDATETIME()
+      Descripción: Fecha y hora UTC de creación del registro.
+
+tunnel.ParameterValue
+---------------------
+Valor concreto de un parámetro dentro de un conjunto. Usa columnas tipadas para mantener compatibilidad y facilitar validación.
+
+  - parameter_value_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único del valor de parámetro.
+  - parameter_set_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Conjunto de parámetros al que pertenece el valor.
+  - parameter_definition_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Definición de parámetro que se está valorando.
+  - value_int
+      Tipo: INT
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Valor entero si el parámetro es de tipo INT.
+  - value_decimal
+      Tipo: DECIMAL(18,6)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Valor decimal si el parámetro es de tipo DECIMAL.
+  - value_bool
+      Tipo: BIT
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Valor booleano si el parámetro es de tipo BOOLEAN.
+  - value_text
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Valor textual si el parámetro es de tipo TEXT.
+  - value_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Valor JSON si el parámetro es de tipo JSON.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.Plan
+-----------
+Plan documental u operativo: PAU, Plan de Emergencia o conjunto de protocolos de explotación.
+
+  - plan_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único del plan.
+  - facility_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Ámbito operativo al que pertenece el plan.
+  - name
+      Tipo: NVARCHAR(200)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Nombre del plan.
+  - plan_type
+      Tipo: NVARCHAR(30)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Tipo de plan: PAU, EMERGENCY_PLAN u OPERATIONS_PROTOCOLS.
+  - authority
+      Tipo: NVARCHAR(200)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Autoridad, organismo o área responsable del plan.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+  - created_at_utc
+      Tipo: DATETIME2(3)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: SYSUTCDATETIME()
+      Descripción: Fecha y hora UTC de creación del registro.
+
+tunnel.PlanTunnelScope
+----------------------
+Relación entre una versión de plan y los túneles cubiertos por ella. Permite que un plan cubra varios túneles y viceversa.
+
+  - plan_tunnel_scope_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único de la relación de alcance.
+  - plan_version_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Versión de plan aplicable.
+  - tunnel_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Túnel cubierto por la versión del plan.
+  - scope_note
+      Tipo: NVARCHAR(400)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Nota de alcance, por ejemplo fase de obras, tramo parcial o condición especial.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.PlanVersion
+------------------
+Versión concreta de un plan, con vigencia, aprobación y estado. Permite gestionar revisiones y trazabilidad normativa.
+
+  - plan_version_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único de la versión del plan.
+  - plan_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Plan al que pertenece la versión.
+  - version_label
+      Tipo: NVARCHAR(50)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Etiqueta de versión, por ejemplo v1.0, v1.1 o 2025.03.
+  - effective_from
+      Tipo: DATE
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Fecha de inicio de vigencia.
+  - effective_to
+      Tipo: DATE
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Fecha de fin de vigencia.
+  - version_status
+      Tipo: NVARCHAR(12)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: ('DRAFT')
+      Descripción: Estado de versión: DRAFT, ACTIVE o RETIRED.
+  - approved_by
+      Tipo: NVARCHAR(200)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Persona, área u organismo que aprueba la versión.
+  - approval_date
+      Tipo: DATE
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Fecha de aprobación.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+  - created_at_utc
+      Tipo: DATETIME2(3)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: SYSUTCDATETIME()
+      Descripción: Fecha y hora UTC de creación del registro.
+
+tunnel.Protocol
+---------------
+Plantilla de actuación asociada a una versión de plan y a un tipo de incidente.
+
+  - protocol_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único del protocolo.
+  - plan_version_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Versión del plan que define el protocolo.
+  - incident_type_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Tipo de incidente gestionado por el protocolo.
+  - name
+      Tipo: NVARCHAR(200)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Nombre operativo del protocolo.
+  - objective
+      Tipo: NVARCHAR(400)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Objetivo resumido del protocolo.
+  - is_remote_executable
+      Tipo: BIT
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: (1)
+      Descripción: Indica si puede ejecutarse desde centro de control o consola remota.
+  - protocol_status
+      Tipo: NVARCHAR(12)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: ('ACTIVE')
+      Descripción: Estado del protocolo: ACTIVE, RETIRED o DRAFT.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.ProtocolParameter
+------------------------
+Relación documental entre protocolo y parámetros que utiliza. Ayuda a validar configuración antes de ejecutar protocolos.
+
+  - protocol_parameter_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único de la relación protocolo-parámetro.
+  - protocol_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Protocolo que utiliza el parámetro.
+  - parameter_definition_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Parámetro requerido o utilizado por el protocolo.
+  - usage_note
+      Tipo: NVARCHAR(400)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Nota que explica cómo usa el protocolo este parámetro.
+
+tunnel.ProtocolRun
+------------------
+Ejecución concreta de un protocolo para un incidente real. Guarda estado, usuario iniciador, paso actual y snapshot de contexto.
+
+  - protocol_run_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único de la ejecución del protocolo.
+  - incident_event_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Incidente gestionado por esta ejecución.
+  - protocol_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Protocolo que se está ejecutando.
+  - started_by_user_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Usuario que inició la ejecución.
+  - started_at_utc
+      Tipo: DATETIME2(3)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: SYSUTCDATETIME()
+      Descripción: Fecha/hora UTC de inicio de la ejecución.
+  - ended_at_utc
+      Tipo: DATETIME2(3)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Fecha/hora UTC de finalización.
+  - run_status
+      Tipo: NVARCHAR(12)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: ('RUNNING')
+      Descripción: Estado de ejecución: RUNNING, PAUSED, COMPLETED o ABORTED.
+  - current_step_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Paso actual dentro del protocolo.
+  - context_snapshot_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Snapshot JSON de contexto: parámetros resueltos, estado de activos, datos del incidente, etc.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.ProtocolStep
+-------------------
+Nodo del flujo de trabajo de un protocolo: decisión, acción, espera, información o checklist.
+
+  - protocol_step_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único del paso.
+  - protocol_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Protocolo al que pertenece el paso.
+  - step_key
+      Tipo: NVARCHAR(80)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Clave estable del paso para referenciarlo desde configuración o interfaz.
+  - step_type
+      Tipo: NVARCHAR(12)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Tipo de paso: DECISION, ACTION, INFO, WAIT o CHECKLIST.
+  - title
+      Tipo: NVARCHAR(200)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Título visible del paso.
+  - instructions
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Instrucciones operativas que debe seguir el operador o el sistema.
+  - requires_ack
+      Tipo: BIT
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: (1)
+      Descripción: Indica si el operador debe confirmar el paso.
+  - timeout_seconds
+      Tipo: INT
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Tiempo máximo recomendado antes de escalar o disparar otra transición.
+  - ui_form_schema_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Esquema JSON para pintar formularios dinámicos en la interfaz.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.Role
+-----------
+Rol operativo o administrativo de un usuario: operador, jefe de turno, mantenimiento, supervisor, etc.
+
+  - role_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único del rol.
+  - name
+      Tipo: NVARCHAR(80)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Nombre único del rol.
+  - description
+      Tipo: NVARCHAR(400)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Descripción de permisos o responsabilidades del rol.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.StepAction
+-----------------
+Relación entre un paso de protocolo y una acción definida. Permite ejecutar varias acciones ordenadas por cada paso.
+
+  - step_action_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único de la relación paso-acción.
+  - protocol_step_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Paso de protocolo que dispara la acción.
+  - action_definition_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Acción definida que se debe ejecutar o registrar.
+  - execution_order
+      Tipo: INT
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: (0)
+      Descripción: Orden de ejecución dentro del paso.
+  - is_mandatory
+      Tipo: BIT
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: (1)
+      Descripción: Indica si la acción es obligatoria en el paso.
+  - parameter_binding_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Mapeo JSON entre parámetros del protocolo/incidente y payload de acción.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.StepNotification
+-----------------------
+Relación entre un paso de protocolo y una regla de notificación. Define cuándo y bajo qué condición se envía un aviso.
+
+  - step_notification_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único de la relación paso-notificación.
+  - protocol_step_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Paso de protocolo que dispara la notificación.
+  - notification_rule_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Regla de notificación a aplicar.
+  - when
+      Tipo: NVARCHAR(12)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Momento de disparo: ON_ENTER, ON_EXIT, ON_TIMEOUT u ON_CONDITION.
+  - condition_expr
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Condición adicional para disparar el aviso.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.StepTransition
+---------------------
+Transición dirigida entre pasos de un protocolo. Permite modelar decisiones condicionales, ramas y rutas alternativas.
+
+  - step_transition_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único de la transición.
+  - protocol_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Protocolo al que pertenece la transición.
+  - from_step_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Paso origen.
+  - to_step_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Paso destino.
+  - condition_expr
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Expresión de condición o regla de negocio. Si es NULL puede interpretarse como transición por defecto.
+  - priority
+      Tipo: INT
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: (0)
+      Descripción: Prioridad de evaluación cuando hay varias transiciones posibles.
+  - label
+      Tipo: NVARCHAR(200)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Texto visible para la transición, por ejemplo Sí, No, Confirmado o Escalar.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.Tube
+-----------
+Tubo, sentido o calzada interna de un túnel. Permite modelar túneles de uno o varios tubos y sentidos de circulación.
+
+  - tube_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único del tubo o sentido.
+  - tunnel_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Túnel al que pertenece el tubo.
+  - name
+      Tipo: NVARCHAR(120)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Nombre del tubo o sentido, por ejemplo Besòs, Llobregat, Ascendente o Descendente.
+  - direction
+      Tipo: NVARCHAR(16)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Dirección normalizada: N, S, E, W, A_TO_B, B_TO_A o BIDIR.
+  - lanes_count
+      Tipo: INT
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Número de carriles del tubo.
+  - speed_limit_kmh
+      Tipo: INT
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Velocidad máxima autorizada en km/h.
+  - gradient_percent
+      Tipo: DECIMAL(6,3)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Pendiente media o relevante expresada en porcentaje.
+  - cross_section_type
+      Tipo: NVARCHAR(80)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Tipo de sección o configuración geométrica.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.Tunnel
+-------------
+Túnel físico individual. Representa la infraestructura principal y permite vincular tubos, zonas, localizaciones, planes e incidencias.
+
+  - tunnel_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único del túnel.
+  - facility_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Ámbito operativo al que pertenece el túnel.
+  - name
+      Tipo: NVARCHAR(200)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Nombre oficial u operativo del túnel.
+  - local_code
+      Tipo: NVARCHAR(80)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Código interno/local del túnel.
+  - road_name
+      Tipo: NVARCHAR(120)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Carretera, ronda, vía o eje viario asociado.
+  - country_code
+      Tipo: NVARCHAR(3)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Código de país ISO-3166 alfa-3.
+  - city
+      Tipo: NVARCHAR(120)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Ciudad o área territorial.
+  - length_m
+      Tipo: DECIMAL(12,3)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Longitud aproximada del túnel en metros.
+  - has_bidirectional_tubes
+      Tipo: BIT
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: (0)
+      Descripción: Indica si el túnel tiene tubos o sentidos bidireccionales.
+  - commissioning_date
+      Tipo: DATE
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Fecha de puesta en servicio.
+  - tunnel_status
+      Tipo: NVARCHAR(20)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: ('ACTIVE')
+      Descripción: Estado operativo del túnel: ACTIVE, WORKS o DECOMMISSIONED.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales como normativa, restricciones, notas geométricas o configuración local.
+  - created_at_utc
+      Tipo: DATETIME2(3)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: SYSUTCDATETIME()
+      Descripción: Fecha y hora UTC de creación del registro.
+
+tunnel.UserAccount
+------------------
+Usuario de la aplicación o consola operativa. La autenticación puede estar en la aplicación, pero aquí queda la identidad operativa.
+
+  - user_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único del usuario.
+  - facility_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Ámbito operativo al que pertenece el usuario.
+  - role_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Rol asignado al usuario.
+  - username
+      Tipo: NVARCHAR(120)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Nombre de usuario o login.
+  - display_name
+      Tipo: NVARCHAR(200)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Nombre visible del usuario.
+  - phone
+      Tipo: NVARCHAR(50)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Teléfono de contacto.
+  - email
+      Tipo: NVARCHAR(200)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Correo electrónico.
+  - is_active
+      Tipo: BIT
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: (1)
+      Descripción: Indica si el usuario está activo.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+  - created_at_utc
+      Tipo: DATETIME2(3)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: SYSUTCDATETIME()
+      Descripción: Fecha y hora UTC de creación del registro.
+
+tunnel.WorkOrder
+----------------
+Orden de trabajo o mantenimiento asociada a un activo y opcionalmente generada desde un incidente.
+
+  - work_order_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único de la orden de trabajo.
+  - asset_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Activo afectado por la orden.
+  - created_from_incident_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Incidente que originó la orden si aplica.
+  - priority
+      Tipo: NVARCHAR(10)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: ('MEDIUM')
+      Descripción: Prioridad: LOW, MEDIUM, HIGH o URGENT.
+  - work_status
+      Tipo: NVARCHAR(12)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: ('OPEN')
+      Descripción: Estado: OPEN, IN_PROGRESS, DONE o CANCELLED.
+  - description
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Descripción del trabajo o incidencia técnica.
+  - created_at_utc
+      Tipo: DATETIME2(3)
+      Obligatorio: Sí
+      Clave primaria: No
+      Valor por defecto: SYSUTCDATETIME()
+      Descripción: Fecha/hora UTC de creación de la orden.
+  - closed_at_utc
+      Tipo: DATETIME2(3)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Fecha/hora UTC de cierre.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.
+
+tunnel.Zone
+-----------
+Sectorización interna de un tubo: zona operativa, compartimento de incendio, zona de evacuación, zona vulnerable o tramo de riesgo.
+
+  - zone_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: Sí
+      Valor por defecto: NEWSEQUENTIALID()
+      Descripción: Identificador técnico único de la zona.
+  - tube_id
+      Tipo: UNIQUEIDENTIFIER
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Tubo al que pertenece la zona.
+  - name
+      Tipo: NVARCHAR(120)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Nombre de la zona.
+  - zone_type
+      Tipo: NVARCHAR(24)
+      Obligatorio: Sí
+      Clave primaria: No
+      Descripción: Tipo de zona: OPERATIONAL, FIRE_COMPARTMENT, EVACUATION, RISK o VULNERABLE.
+  - start_chainage_m
+      Tipo: DECIMAL(12,3)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Inicio de la zona en metros de progresiva o referencia lineal.
+  - end_chainage_m
+      Tipo: DECIMAL(12,3)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Fin de la zona en metros de progresiva o referencia lineal.
+  - meta_json
+      Tipo: NVARCHAR(MAX)
+      Obligatorio: No
+      Clave primaria: No
+      Descripción: Datos adicionales flexibles en JSON.

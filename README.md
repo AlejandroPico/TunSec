@@ -1,61 +1,74 @@
-# Tunnel Safety Decision Support DB
+# TunnelSafetyDB - Paquete final con un único SQL
 
-Repositorio de base de datos SQL Server para un sistema de soporte a decisiones en protocolos de seguridad de túneles.
+Generado: 2026-05-09 22:14:44 UTC
 
-## Archivos
+Este paquete contiene la versión final preparada para subir a Git.
 
-- `001_create_tunnel_safety_db.sql`: script completo de creación de la base de datos `TunnelSafetyDB`.
-- `DATA_DICTIONARY_TunnelSafetyDB.md`: desglose documental de tablas y atributos.
-- `DATA_DICTIONARY_TunnelSafetyDB.txt`: misma documentación en texto plano.
+## Estructura
 
-## Requisitos
+```text
+TunnelSafetyDB_Final_Unico_SQL/
+├── README.md
+├── sql/
+│   └── TunnelSafetyDB_FINAL_RESET_CREATE_VERIFY.sql
+├── txt/
+│   └── TunnelSafetyDB_FINAL_RESET_CREATE_VERIFY.txt
+└── docs/
+    ├── DATA_DICTIONARY_TunnelSafetyDB.md
+    ├── DATA_DICTIONARY_TunnelSafetyDB.txt
+    └── EXECUTION_GUIDE_DBEAVER.md
+```
 
-- SQL Server 2022.
-- DBeaver, SSMS, Azure Data Studio u otro cliente SQL compatible.
-- Permisos para crear bases de datos.
+## Importante
+
+Solo hay **un archivo SQL** en la carpeta `sql`.
+
+Ese archivo único:
+
+- Borra `TunnelSafetyDB` si existe.
+- Crea `TunnelSafetyDB` desde cero.
+- Crea todas las tablas en el orden adecuado.
+- Crea claves primarias, foráneas, checks e índices.
+- Inserta datos base.
+- Crea documentación interna consultable.
+- Ejecuta comprobaciones finales.
+
+## Archivo SQL principal
+
+```text
+sql/TunnelSafetyDB_FINAL_RESET_CREATE_VERIFY.sql
+```
+
+## Copia en texto plano
+
+El mismo contenido está duplicado como TXT:
+
+```text
+txt/TunnelSafetyDB_FINAL_RESET_CREATE_VERIFY.txt
+```
 
 ## Ejecución en DBeaver
 
-1. Abre una conexión a SQL Server.
-2. Abre un editor SQL.
-3. Ejecuta el archivo `001_create_tunnel_safety_db.sql` completo.
-4. Refresca la conexión o el nodo `Databases`.
-5. Verifica:
+Ejecuta el SQL completo con:
 
-```sql
-SELECT name
-FROM sys.databases
-WHERE name = N'TunnelSafetyDB';
-
-USE TunnelSafetyDB;
-
-SELECT s.name AS schema_name, t.name AS table_name
-FROM sys.tables t
-JOIN sys.schemas s ON s.schema_id = t.schema_id
-WHERE s.name = N'tunnel'
-ORDER BY t.name;
+```text
+Execute SQL Script / Alt + X
 ```
+
+No ejecutes el archivo por selección parcial.
 
 ## Documentación interna en la base de datos
 
-El script crea extended properties `MS_Description` para tablas y columnas.
-
-Puedes consultar la documentación interna con:
+Después de ejecutar el script, puedes consultar:
 
 ```sql
-USE TunnelSafetyDB;
+USE TunnelSafetyDB
 
-SELECT * FROM tunnel.v_TableDocumentation
-ORDER BY table_name;
-
-SELECT * FROM tunnel.v_ColumnDocumentation
-ORDER BY table_name, column_id;
-
-SELECT * FROM tunnel.v_DatabaseDictionary
-ORDER BY table_name, item_type, column_id;
+SELECT *
+FROM tunnel.DatabaseDocumentation
+ORDER BY table_name, object_type, column_name
 ```
 
-## Notas importantes
+## Documentación externa
 
-- `NVARCHAR(MAX)` es compatible con SQL Server 2022. Si DBeaver lo marca en rojo, normalmente es un falso positivo del parser.
-- `ISJSON()` es compatible y el script fuerza `COMPATIBILITY_LEVEL = 160`.
+La carpeta `docs` contiene el diccionario de datos en Markdown y TXT.
