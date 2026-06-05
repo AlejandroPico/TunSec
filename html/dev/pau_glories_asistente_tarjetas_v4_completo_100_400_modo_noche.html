@@ -1,0 +1,2329 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PAU Glòries · Asistente operativo</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --bg-soft: #eef2f7;
+      --surface: #ffffff;
+      --surface-2: #f9fafb;
+      --text: #0f172a;
+      --muted: #64748b;
+      --line: #dbe3ee;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --green: #16a34a;
+      --green-soft: #dcfce7;
+      --amber: #d97706;
+      --amber-soft: #fef3c7;
+      --red: #dc2626;
+      --red-soft: #fee2e2;
+      --violet: #7c3aed;
+      --violet-soft: #ede9fe;
+      --shadow: 0 18px 55px rgba(15, 23, 42, .12);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, .12), transparent 28rem),
+        radial-gradient(circle at bottom right, rgba(22, 163, 74, .10), transparent 28rem),
+        var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .hidden { display: none !important; }
+
+    .app {
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    header {
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      border-bottom: 1px solid rgba(219, 227, 238, .9);
+      background: rgba(255, 255, 255, .78);
+      backdrop-filter: blur(18px);
+      z-index: 20;
+    }
+
+    .brand { display: flex; align-items: center; gap: 12px; min-width: 260px; }
+    .brand-mark {
+      width: 42px; height: 42px; border-radius: 15px;
+      display: grid; place-items: center;
+      color: white; font-weight: 900;
+      background: linear-gradient(135deg, #2563eb, #16a34a);
+      box-shadow: 0 10px 24px rgba(37, 99, 235, .25);
+    }
+    .brand h1 { margin: 0; font-size: 16px; line-height: 1.1; letter-spacing: -.02em; }
+    .brand p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+
+    .top-status {
+      display: flex; align-items: center; gap: 8px;
+      color: var(--muted); font-size: 13px;
+      background: rgba(248, 250, 252, .92);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      min-width: 0;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--green); box-shadow: 0 0 0 4px rgba(22, 163, 74, .12); }
+
+    .header-actions { display: flex; align-items: center; gap: 10px; }
+    .icon-btn, .small-btn, .ghost-btn, .primary-btn, .danger-btn, .choice-btn {
+      border: 0;
+      border-radius: 14px;
+      transition: transform .12s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
+    }
+    .icon-btn:active, .small-btn:active, .ghost-btn:active, .primary-btn:active, .danger-btn:active, .choice-btn:active { transform: scale(.98); }
+    .icon-btn {
+      width: 40px; height: 40px; display: grid; place-items: center;
+      background: var(--surface); border: 1px solid var(--line); color: var(--text);
+    }
+    .small-btn {
+      padding: 10px 14px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-weight: 700;
+    }
+    .primary-btn {
+      padding: 11px 16px;
+      background: var(--accent);
+      color: white;
+      font-weight: 800;
+      box-shadow: 0 12px 22px rgba(37, 99, 235, .18);
+    }
+    .danger-btn {
+      padding: 11px 16px;
+      background: var(--red);
+      color: white;
+      font-weight: 800;
+      box-shadow: 0 12px 22px rgba(220, 38, 38, .16);
+    }
+    .ghost-btn {
+      padding: 10px 14px;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid transparent;
+      font-weight: 700;
+    }
+    .ghost-btn:hover, .small-btn:hover, .icon-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+
+    main {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(260px, 340px) 1fr;
+      gap: 24px;
+      padding: 24px;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      min-height: 0;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, .82);
+      border: 1px solid rgba(219, 227, 238, .9);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 8px 30px rgba(15, 23, 42, .06);
+    }
+
+    .side-card { padding: 18px; margin-bottom: 14px; }
+    .side-title { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 12px; }
+    .side-title h2 { margin:0; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      background: var(--accent-soft);
+      color: #1d4ed8;
+      white-space: nowrap;
+    }
+    .pill.green { background: var(--green-soft); color: #166534; }
+    .pill.amber { background: var(--amber-soft); color: #92400e; }
+    .pill.red { background: var(--red-soft); color: #991b1b; }
+    .pill.violet { background: var(--violet-soft); color: #5b21b6; }
+
+    .select-field, .search-field, .form-input, .form-select, .form-textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: white;
+      color: var(--text);
+      border-radius: 14px;
+      padding: 12px 13px;
+      outline: none;
+      transition: border-color .12s ease, box-shadow .12s ease;
+    }
+    .select-field:focus, .search-field:focus, .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: rgba(37, 99, 235, .7);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, .12);
+    }
+    .form-textarea { min-height: 92px; resize: vertical; }
+    .form-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .field { margin-top: 10px; }
+    .field label { display:block; margin-bottom: 6px; font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+
+    .category-grid { display:grid; gap: 10px; }
+    .category-btn {
+      width: 100%;
+      display:flex; align-items:center; justify-content:space-between; gap: 10px;
+      border: 1px solid var(--line);
+      background: white;
+      padding: 13px;
+      border-radius: 16px;
+      text-align:left;
+      color: var(--text);
+      transition: transform .12s, border-color .12s, background .12s;
+    }
+    .category-btn:hover { transform: translateY(-1px); border-color: #bfdbfe; background: #f8fbff; }
+    .category-btn.active { border-color: #2563eb; background: #eff6ff; }
+    .category-name { font-weight: 900; display:flex; align-items:center; gap: 9px; }
+    .count { color: var(--muted); font-size: 12px; }
+
+    .protocol-list { display:grid; gap: 8px; }
+    .protocol-btn {
+      display:grid; grid-template-columns: auto 1fr auto; align-items:center; gap: 10px;
+      width: 100%;
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 16px;
+      padding: 12px;
+      text-align:left;
+      transition: background .12s, border-color .12s, transform .12s;
+    }
+    .protocol-btn:hover { transform: translateY(-1px); border-color: #c4d7f8; background:#fbfdff; }
+    .protocol-btn.active { border-color: #2563eb; background: #eff6ff; }
+    .code-chip {
+      display:inline-flex; align-items:center; justify-content:center;
+      width: 70px;
+      padding: 7px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 950;
+      letter-spacing: .02em;
+      background: var(--green-soft);
+      color:#166534;
+    }
+    .code-chip.prealerta { background: var(--green-soft); color:#166534; }
+    .code-chip.alerta { background: var(--amber-soft); color:#92400e; }
+    .code-chip.emergencia { background: var(--red-soft); color:#991b1b; }
+    .protocol-title { font-size: 13px; font-weight: 850; line-height: 1.25; }
+    .protocol-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .workspace {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 18px;
+      overflow: hidden;
+    }
+
+    .progress-wrap {
+      background: rgba(255, 255, 255, .78);
+      border: 1px solid rgba(219, 227, 238, .9);
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
+      box-shadow: 0 8px 30px rgba(15, 23, 42, .05);
+    }
+    .progress-head { display:flex; align-items:center; justify-content:space-between; gap: 10px; margin-bottom: 12px; }
+    .progress-head strong { font-size: 13px; }
+    .progress-head span { font-size: 12px; color: var(--muted); }
+    .steps { display:grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .step-dot {
+      height: 8px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      overflow: hidden;
+    }
+    .step-dot.active { background: linear-gradient(90deg, #2563eb, #16a34a); box-shadow: 0 0 0 4px rgba(37, 99, 235, .08); }
+    .step-dot.done { background: #86efac; }
+
+    .stage {
+      min-height: 0;
+      overflow: auto;
+      display:grid;
+      place-items: center;
+      padding: 6px;
+    }
+
+    .hero-card, .wizard-card {
+      width: min(850px, 100%);
+      background: rgba(255, 255, 255, .94);
+      border: 1px solid rgba(219, 227, 238, .92);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      padding: clamp(24px, 4vw, 46px);
+      animation: cardIn .28s ease both;
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(12px) scale(.995); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .hero-card { text-align: center; }
+    .hero-icon {
+      width: 70px; height:70px; margin: 0 auto 18px;
+      border-radius: 24px;
+      display:grid; place-items:center;
+      font-size: 32px;
+      background: linear-gradient(135deg, #dbeafe, #dcfce7);
+    }
+    .hero-card h2, .wizard-card h2 { margin:0; font-size: clamp(26px, 4vw, 42px); letter-spacing: -.04em; line-height: 1.05; }
+    .hero-card p { max-width: 660px; margin: 16px auto 0; color: var(--muted); font-size: 16px; line-height: 1.6; }
+    .quick-grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 26px; }
+    .quick-card {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 20px;
+      padding: 16px;
+      text-align: left;
+      transition: transform .12s, box-shadow .12s, border-color .12s;
+    }
+    .quick-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(15,23,42,.08); border-color:#bfdbfe; }
+    .quick-card strong { display:block; margin-bottom: 5px; }
+    .quick-card small { color: var(--muted); line-height: 1.45; }
+
+    .wizard-meta { display:flex; align-items:center; flex-wrap:wrap; gap: 8px; margin-bottom: 20px; }
+    .wizard-title { margin-top: 0; }
+    .wizard-help { color: var(--muted); line-height: 1.6; font-size: 16px; margin: 12px 0 0; max-width: 760px; }
+    .question { margin-top: 26px; font-size: 18px; font-weight: 900; }
+    .choices { display:grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 16px; }
+    .choice-btn {
+      text-align: left;
+      min-height: 74px;
+      padding: 16px;
+      background: white;
+      border: 1px solid var(--line);
+      color: var(--text);
+    }
+    .choice-btn:hover { border-color: #93c5fd; background: #f8fbff; box-shadow: 0 10px 24px rgba(15,23,42,.08); }
+    .choice-btn .label { display:block; font-weight: 950; font-size: 15px; }
+    .choice-btn .hint { display:block; margin-top: 5px; color: var(--muted); font-size: 12px; line-height:1.35; }
+    .choice-btn.yes { border-color: rgba(22, 163, 74, .35); }
+    .choice-btn.no { border-color: rgba(220, 38, 38, .25); }
+    .choice-btn.warn { border-color: rgba(217, 119, 6, .32); }
+
+    .action-strip {
+      margin-top: 24px;
+      border: 1px solid var(--line);
+      background: #f8fafc;
+      border-radius: 20px;
+      padding: 16px;
+    }
+    .action-strip h3 { margin:0 0 10px; font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing:.08em; }
+    .action-list { display:grid; gap: 8px; }
+    .action-item { display:flex; align-items:flex-start; gap: 10px; color:#334155; line-height: 1.45; }
+    .action-item::before {
+      content: "";
+      width: 8px; height: 8px; border-radius:999px; background: var(--accent); flex:0 0 auto; margin-top:.48em;
+    }
+
+    .input-zone { margin-top: 24px; display:grid; gap: 12px; }
+    .threshold-result {
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: #f8fafc;
+      padding: 16px;
+      margin-top: 16px;
+    }
+    .result-main { display:flex; align-items:center; justify-content:space-between; gap: 12px; flex-wrap:wrap; }
+    .result-main strong { font-size: 18px; }
+    .meter {
+      margin-top: 14px;
+      height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #86efac 0 33%, #fde68a 33% 66%, #fecaca 66% 100%);
+      overflow: hidden;
+      position: relative;
+    }
+    .meter-pin {
+      position:absolute; top:-4px;
+      width: 4px; height: 18px; border-radius:999px; background:#0f172a;
+      box-shadow: 0 0 0 3px rgba(255,255,255,.9);
+      left: 0;
+    }
+
+    .wizard-footer {
+      display:flex; align-items:center; justify-content:space-between; gap: 10px; flex-wrap:wrap;
+      margin-top: 26px;
+    }
+    .footer-left, .footer-right { display:flex; align-items:center; gap: 10px; flex-wrap:wrap; }
+
+    .bottom-bar {
+      display:flex; align-items:center; justify-content:space-between; gap: 14px;
+      background: rgba(255, 255, 255, .78);
+      border: 1px solid rgba(219, 227, 238, .9);
+      border-radius: var(--radius-lg);
+      padding: 12px 14px;
+    }
+    .session-summary { min-width: 0; color: var(--muted); font-size: 13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+    .drawer-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(15, 23, 42, .28);
+      backdrop-filter: blur(2px);
+      z-index: 80;
+      display:none;
+    }
+    .drawer-backdrop.open { display:block; }
+    .drawer {
+      position: fixed;
+      top: 0; right: 0;
+      height: 100%;
+      width: min(520px, 96vw);
+      background: white;
+      border-left: 1px solid var(--line);
+      box-shadow: -22px 0 55px rgba(15, 23, 42, .18);
+      transform: translateX(105%);
+      transition: transform .2s ease;
+      z-index: 90;
+      display:grid;
+      grid-template-rows: auto 1fr auto;
+    }
+    .drawer.open { transform: translateX(0); }
+    .drawer-header {
+      padding: 20px;
+      border-bottom:1px solid var(--line);
+      display:flex; align-items:center; justify-content:space-between; gap: 12px;
+    }
+    .drawer-header h2 { margin:0; font-size:18px; letter-spacing:-.02em; }
+    .drawer-content { padding: 20px; overflow:auto; }
+    .drawer-footer { padding: 16px 20px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px; }
+
+    .tabs { display:flex; gap: 8px; margin-bottom: 16px; flex-wrap:wrap; }
+    .tab { padding: 9px 12px; border-radius: 999px; border:1px solid var(--line); background:#fff; color:var(--muted); font-weight:800; }
+    .tab.active { color:#1d4ed8; background:var(--accent-soft); border-color:#bfdbfe; }
+
+    .timeline { display:grid; gap: 12px; }
+    .timeline-item {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      background: #fbfdff;
+    }
+    .timeline-time { font-size: 12px; color: #1d4ed8; font-weight: 900; margin-bottom: 5px; }
+    .timeline-text { color:#334155; line-height:1.45; }
+
+    .check-row {
+      display:flex; align-items:flex-start; gap: 10px;
+      border:1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      background:#fff;
+      margin-bottom: 8px;
+    }
+    .check-row input { margin-top: 3px; }
+    .check-row.done { background:#f0fdf4; border-color:#bbf7d0; color:#166534; }
+    .detail-section { margin-bottom: 20px; }
+    .detail-section h3 { margin: 0 0 10px; font-size: 13px; color: var(--muted); text-transform:uppercase; letter-spacing:.08em; }
+    .detail-section p, .detail-section li { color:#334155; line-height:1.55; }
+    .detail-section ul { margin:0; padding-left: 20px; }
+    .threshold-table { width: 100%; border-collapse: collapse; overflow:hidden; border-radius: 14px; }
+    .threshold-table th, .threshold-table td { border:1px solid var(--line); padding: 10px; text-align:left; font-size:13px; }
+    .threshold-table th { background:#f8fafc; color:#475569; }
+
+    .notice {
+      margin-top: 14px;
+      border: 1px solid #fed7aa;
+      background: #fff7ed;
+      color:#9a3412;
+      border-radius: 16px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+
+    /* Tema día / noche */
+    html[data-theme="dark"] {
+      --bg: #07111f;
+      --bg-soft: #0d1b2e;
+      --surface: #101b2d;
+      --surface-2: #0f172a;
+      --text: #e5edf8;
+      --muted: #94a3b8;
+      --line: rgba(148, 163, 184, .24);
+      --accent: #60a5fa;
+      --accent-soft: rgba(96, 165, 250, .16);
+      --green: #22c55e;
+      --green-soft: rgba(34, 197, 94, .16);
+      --amber: #f59e0b;
+      --amber-soft: rgba(245, 158, 11, .18);
+      --red: #ef4444;
+      --red-soft: rgba(239, 68, 68, .18);
+      --violet: #a78bfa;
+      --violet-soft: rgba(167, 139, 250, .18);
+      --shadow: 0 22px 70px rgba(0, 0, 0, .46);
+    }
+
+    html[data-theme="dark"] body {
+      background:
+        radial-gradient(circle at top left, rgba(96, 165, 250, .16), transparent 30rem),
+        radial-gradient(circle at bottom right, rgba(239, 68, 68, .10), transparent 30rem),
+        var(--bg);
+    }
+    html[data-theme="dark"] header,
+    html[data-theme="dark"] .panel,
+    html[data-theme="dark"] .progress-wrap,
+    html[data-theme="dark"] .bottom-bar,
+    html[data-theme="dark"] .hero-card,
+    html[data-theme="dark"] .wizard-card {
+      background: rgba(15, 23, 42, .82);
+      border-color: var(--line);
+    }
+    html[data-theme="dark"] .top-status,
+    html[data-theme="dark"] .select-field,
+    html[data-theme="dark"] .search-field,
+    html[data-theme="dark"] .form-input,
+    html[data-theme="dark"] .form-select,
+    html[data-theme="dark"] .form-textarea,
+    html[data-theme="dark"] .category-btn,
+    html[data-theme="dark"] .protocol-btn,
+    html[data-theme="dark"] .quick-card,
+    html[data-theme="dark"] .choice-btn,
+    html[data-theme="dark"] .small-btn,
+    html[data-theme="dark"] .icon-btn,
+    html[data-theme="dark"] .drawer,
+    html[data-theme="dark"] .check-row,
+    html[data-theme="dark"] .tab {
+      background: #0f172a;
+      color: var(--text);
+      border-color: var(--line);
+    }
+    html[data-theme="dark"] .category-btn:hover,
+    html[data-theme="dark"] .protocol-btn:hover,
+    html[data-theme="dark"] .quick-card:hover,
+    html[data-theme="dark"] .choice-btn:hover,
+    html[data-theme="dark"] .ghost-btn:hover,
+    html[data-theme="dark"] .small-btn:hover,
+    html[data-theme="dark"] .icon-btn:hover {
+      background: #14243a;
+      border-color: rgba(96, 165, 250, .45);
+    }
+    html[data-theme="dark"] .category-btn.active,
+    html[data-theme="dark"] .protocol-btn.active {
+      background: rgba(37, 99, 235, .20);
+      border-color: rgba(96, 165, 250, .75);
+    }
+    html[data-theme="dark"] .action-strip,
+    html[data-theme="dark"] .threshold-result,
+    html[data-theme="dark"] .timeline-item {
+      background: rgba(15, 23, 42, .75);
+      border-color: var(--line);
+    }
+    html[data-theme="dark"] .action-item,
+    html[data-theme="dark"] .timeline-text,
+    html[data-theme="dark"] .detail-section p,
+    html[data-theme="dark"] .detail-section li,
+    html[data-theme="dark"] .threshold-result p {
+      color: #cbd5e1 !important;
+    }
+    html[data-theme="dark"] .timeline-time { color: #93c5fd; }
+    html[data-theme="dark"] .threshold-table th { background:#111827; color:#cbd5e1; }
+    html[data-theme="dark"] .threshold-table td { color:#dbeafe; }
+    html[data-theme="dark"] .notice { background: rgba(251, 146, 60, .12); color:#fed7aa; border-color: rgba(251, 146, 60, .35); }
+    html[data-theme="dark"] .meter-pin { background:#e5edf8; box-shadow: 0 0 0 3px rgba(15,23,42,.95); }
+    html[data-theme="dark"] .hero-icon { background: linear-gradient(135deg, rgba(96,165,250,.22), rgba(34,197,94,.18)); }
+    html[data-theme="dark"] .step-dot { background: #1f2937; }
+    html[data-theme="dark"] .step-dot.done { background: rgba(34,197,94,.72); }
+    html[data-theme="dark"] .drawer-backdrop { background: rgba(0, 0, 0, .48); }
+
+    @media (max-width: 980px) {
+      body { overflow: auto; }
+      .app { min-height: 100%; height: auto; }
+      main { grid-template-columns: 1fr; overflow: visible; }
+      .workspace, .sidebar { overflow: visible; }
+      header { height:auto; align-items:flex-start; gap: 12px; flex-wrap:wrap; padding: 14px; }
+      .brand { min-width: 0; }
+      .top-status { order: 3; width:100%; justify-content:center; }
+      .quick-grid, .form-grid { grid-template-columns: 1fr; }
+      .steps { grid-template-columns: repeat(5, 1fr); }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="brand-mark">PAU</div>
+      <div>
+        <h1>Glòries · Asistente operativo</h1>
+        <p>Tarjetas de decisión · Registro · Checklist</p>
+      </div>
+    </div>
+    <div class="top-status" id="topStatus"><span class="dot"></span><span>Túnel activo: Glòries · Sistema en espera</span></div>
+    <div class="header-actions">
+      <button class="small-btn" id="btnTheme" title="Alternar modo día/noche">🌙 Noche</button>
+      <button class="small-btn" id="btnChecklist">Checklist</button>
+      <button class="small-btn" id="btnHistory">Historial</button>
+      <button class="primary-btn" id="btnExport">Exportar</button>
+    </div>
+  </header>
+
+  <main>
+    <aside class="sidebar">
+      <section class="panel side-card">
+        <div class="side-title">
+          <h2>Contexto</h2>
+          <span class="pill green">Prealerta</span>
+        </div>
+        <div class="field">
+          <label for="tunnelSelect">Túnel</label>
+          <select id="tunnelSelect" class="select-field"></select>
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="directionSelect">Sentido</label>
+            <select id="directionSelect" class="form-select"></select>
+          </div>
+          <div class="field">
+            <label for="tubeSelect">Tubo</label>
+            <select id="tubeSelect" class="form-select"></select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="incidentLocation">PK / tramo / cámara</label>
+          <input id="incidentLocation" class="form-input" placeholder="Ej. PK 0+450, cámara C-12..." />
+        </div>
+        <div class="field">
+          <label for="incidentNotes">Nota rápida</label>
+          <textarea id="incidentNotes" class="form-textarea" placeholder="Datos relevantes, matrícula, aviso recibido, observaciones..."></textarea>
+        </div>
+      </section>
+
+      <section class="panel side-card">
+        <div class="side-title">
+          <h2>Categoría</h2>
+        </div>
+        <div id="categoryGrid" class="category-grid"></div>
+      </section>
+
+      <section class="panel side-card">
+        <div class="side-title">
+          <h2>Protocolos</h2>
+          <span class="pill" id="protocolCounter">0</span>
+        </div>
+        <input id="protocolSearch" class="search-field" placeholder="Buscar: CO, opacidad, vehículo..." />
+        <div id="protocolList" class="protocol-list" style="margin-top:12px;"></div>
+      </section>
+    </aside>
+
+    <section class="workspace">
+      <div class="progress-wrap">
+        <div class="progress-head">
+          <strong id="progressTitle">Sin protocolo iniciado</strong>
+          <span id="progressText">Selecciona una categoría o un PAU</span>
+        </div>
+        <div class="steps" id="progressSteps"></div>
+      </div>
+
+      <div class="stage" id="stage"></div>
+
+      <div class="bottom-bar">
+        <div class="session-summary" id="sessionSummary">No hay incidencia activa. El registro comenzará al iniciar un protocolo.</div>
+        <div class="footer-right">
+          <button class="ghost-btn" id="btnTechnical">Detalle técnico</button>
+          <button class="danger-btn" id="btnReset">Reiniciar sesión</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-header">
+    <h2 id="drawerTitle">Panel</h2>
+    <button class="icon-btn" id="drawerClose">✕</button>
+  </div>
+  <div class="drawer-content" id="drawerContent"></div>
+  <div class="drawer-footer">
+    <button class="small-btn" id="drawerExport">Exportar informe</button>
+    <button class="primary-btn" id="drawerOk">Cerrar</button>
+  </div>
+</aside>
+
+<script>
+'use strict';
+
+const TUNNELS = {
+  glories: {
+    name: 'Túnel de les Glòries',
+    zone: 'Barcelona · C-31 / Gran Via',
+    directions: ['Besòs', 'Llobregat', 'No indicado'],
+    tubes: ['Tub 1 · Mar', 'Tub 2 · Muntanya', 'No indicado'],
+    enabledProtocols: ['100-TRA','101-TRA','110-AMB','115-AMB','120-AMB','130-TRA','140-TRA','150-TRA','160-AVA','200-TRA','210-TRA','215-AMB','220-AMB','230-TRA','240-TRA','250-TRA','260-AVA','270-TRA','280-TRA','310-AMB','315-AMB','320-AMB','330-ILI','360-AVA','370-TRA','371-TRA','380-TRA','390-ILI','400-FOC']
+  },
+  plantilla: {
+    name: 'Plantilla para futuros túneles',
+    zone: 'Añadir datos específicos',
+    directions: ['Sentido A', 'Sentido B'],
+    tubes: ['Tubo A', 'Tubo B'],
+    enabledProtocols: [],
+    disabled: true
+  }
+};
+
+const CATEGORIES = {
+  TRA: { name: 'Tráfico', icon: '🚗', hint: 'Vehículos, retenciones, trabajos, detenciones.' },
+  AMB: { name: 'Ambiente', icon: '🌫️', hint: 'Meteorología, gases, opacidad, visibilidad.' },
+  AVA: { name: 'Averías', icon: '🛠️', hint: 'Sistemas, estructura, daños leves o críticos.' },
+  ILI: { name: 'Seguridad / ilícitos', icon: '🚨', hint: 'Manifestaciones, sabotaje, intrusión o atentado.' },
+  FOC: { name: 'Fuego / explosión', icon: '🔥', hint: 'Incendio, explosión o pérdida súbita de visibilidad.' }
+};
+
+const THRESHOLDS = {
+  gases: {
+    CO: { unit:'ppm', prealert:70, alert:150, closure:200, note:'Con personas en el túnel, extremar vigilancia si CO supera 20 ppm durante exposición prolongada.' },
+    NO2: { unit:'ppm', prealert:0.8, alert:1.2, closure:2, note:'Vigilar especialmente con personal o usuarios dentro del túnel.' },
+    NO: { unit:'ppm', prealert:7.2, alert:10.8, closure:20, note:'Vigilar especialmente con personal o usuarios dentro del túnel.' }
+  },
+  opacity: { unit:'m⁻¹', prealert:0.007, alert:0.009, closure:0.012 }
+};
+
+const PROTOCOLS = {
+  '100-TRA': {
+    code:'100-TRA', category:'TRA', level:'Prealerta', title:'Circulación de vehículos especiales con autorización',
+    keywords:['vehículo especial','autorización','gálibo','velocidad reducida','dolly','convoy'],
+    phases:['Detección','Comunicación','Medidas','Seguimiento','Cierre'],
+    description:'Presencia de vehículos especiales autorizados, con o sin escolta propia, normalmente con velocidad anormalmente reducida.',
+    location:'Túnel y accesos.',
+    detection:['Aviso del Centre de Gestió de la Mobilitat o Guàrdia Urbana.','Aviso de empresa transportista solicitando información técnica.','Observación de vehículos con dimensiones, peso u otras características especiales.'],
+    info:['Tipo de incidente.','Localización/tubo de circulación.','Fecha y hora de circulación.','Tipo de vehículo y posible exceso de gálibo horizontal.','Estado del tráfico.','Medidas adoptadas.'],
+    nodes:{
+      start:{phase:0,type:'choice',title:'Vehículo especial autorizado',help:'Registra primero si existe comunicación operativa con el vehículo o convoy.',question:'¿Se ha establecido comunicación con el vehículo?',actions:['Iniciar seguimiento de la incidencia.','Preparar enclavamiento de CTTV sobre el vehículo.'],options:[
+        {label:'Sí, comunicación establecida',hint:'Se puede coordinar el seguimiento.',next:'cttv',tone:'yes'},
+        {label:'No / no disponible',hint:'Continuar con verificación visual y avisos.',next:'cttv',tone:'warn'},
+        {label:'No hace falta',hint:'Incidencia detectada visualmente y controlada.',next:'cttv'}
+      ]},
+      cttv:{phase:1,type:'action',title:'Seguimiento CTTV y avisos',help:'Enclava cámaras y deja constancia de los avisos operativos.',actions:['Enclavar CTTV sobre el vehículo o convoy.','Avisar a SCC, CGMR y Equipo de Vialidad.','Preparar radiodifusión: vehículo circulando a velocidad reducida.'],next:'galibo'},
+      galibo:{phase:2,type:'choice',title:'Comprobación de gálibo horizontal',help:'La decisión clave es si el vehículo invade o condiciona carriles por exceso de ancho.',question:'¿Existe exceso de gálibo horizontal?',actions:['Mantener CTTV hasta salida del túnel.','Subir iluminación a nivel normal si estuviera a medio flujo.'],options:[
+        {label:'Sí',hint:'Debe plantearse cierre de carril.',next:'laneClosure',tone:'warn'},
+        {label:'No',hint:'Gestionar como vehículo lento.',next:'slowVehicle',tone:'yes'}
+      ]},
+      laneClosure:{phase:2,type:'terminal',status:'Derivación operativa',title:'Aplicar protocolo de cierre de carril',summary:'El vehículo especial requiere tratamiento de cierre de carril. Registra derivación y mantén seguimiento.',actions:['Activar protocolo de cierre de carril.','Mantener avisos a SCC/CGMR/Equipo de Vialidad.','Mantener iluminación normal si procede.','Supervisar hasta salida del túnel.']},
+      slowVehicle:{phase:3,type:'choice',title:'Vehículo lento',help:'El flujo principal queda en supervisión hasta que el vehículo salga del túnel.',question:'¿El vehículo ha salido del túnel o ha finalizado la afección?',actions:['Radiodifusión de vehículo a velocidad reducida.','Supervisar circulación mediante CTTV.'],options:[
+        {label:'Sí, finalizado',next:'end',tone:'yes'},
+        {label:'No, seguir supervisando',next:'slowVehicle',tone:'warn'}
+      ]},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin del incidente',summary:'Restablece condiciones normales de explotación y cierra el registro.',actions:['Restablecer condiciones normales de explotación.','Cerrar registro de la incidencia.']}
+    }
+  },
+
+  '101-TRA': {
+    code:'101-TRA', category:'TRA', level:'Prealerta', title:'Circulación de vehículo con mercancías peligrosas',
+    keywords:['MMPP','mercancías peligrosas','ADR','ONU','placa naranja','transporte peligroso'],
+    phases:['Detección','Autorización','Medidas','Seguimiento','Cierre'],
+    description:'Presencia de vehículos de transporte de mercancías peligrosas, con carga o sin ella, estén o no autorizados para circular por el túnel.',
+    location:'Túnel y accesos.',
+    detection:['Observación directa mediante CTTV.','Aviso de empresa transportista.','Aviso del Centre de Gestió de la Mobilitat o Guàrdia Urbana.'],
+    info:['Tipo de incidente.','Localización/tubo de circulación.','Fecha y hora de circulación.','Tipo de vehículo, placa ADR, número ONU o tipo de peligro si puede identificarse.','Estado del tráfico.','Medidas adoptadas.'],
+    nodes:{
+      start:{phase:0,type:'choice',title:'Mercancías peligrosas detectadas',help:'Antes de actuar, clasifica si la circulación parece permitida o no según tubo/destino.',question:'¿La circulación parece permitida?',actions:['Visualizar CTTV.','Intentar identificar placa ADR/número ONU si es posible.'],options:[
+        {label:'Permitida',hint:'Destino ciudad o supuesto autorizado.',next:'recordAdr',tone:'yes'},
+        {label:'No permitida',hint:'Circulación en tránsito u otro caso no permitido.',next:'notAllowed',tone:'warn'},
+        {label:'No confirmado',hint:'Falta información; continuar verificando.',next:'recordAdr'}
+      ]},
+      recordAdr:{phase:1,type:'note',title:'Registrar datos ADR',help:'Añade los datos visibles sin retrasar la actuación. Si no son visibles, continúa.',fields:[
+        {id:'adrPlate',label:'Placa ADR / número ONU',placeholder:'Ej. 33/1203, no visible...'},
+        {id:'vehicleDesc',label:'Descripción del vehículo',placeholder:'Modelo, color, matrícula, cisterna, contenedor...'}
+      ],actions:['Registrar placa ADR/número ONU si puede identificarse.','Registrar estado del tráfico.'],next:'follow'},
+      notAllowed:{phase:2,type:'action',title:'Circulación no permitida o dudosa',help:'Activa coordinación operativa y mantén seguimiento visual.',actions:['Avisar a SCC y Guàrdia Urbana.','Mantener CTTV sobre el vehículo.','Registrar tubo, sentido, matrícula y datos ADR si son visibles.'],next:'follow'},
+      follow:{phase:3,type:'choice',title:'Seguimiento del vehículo MMPP',help:'Mantén vigilancia hasta que el vehículo salga del túnel o deje de afectar a la explotación.',question:'¿El vehículo ha salido del túnel?',actions:['Mantener seguimiento CTTV.','No perder trazabilidad del vehículo.','Registrar medidas adoptadas.'],options:[
+        {label:'Sí, fuera del túnel',next:'end',tone:'yes'},
+        {label:'No, continúa dentro',next:'follow',tone:'warn'}
+      ]},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de seguimiento MMPP',summary:'Restablece operación ordinaria y conserva el registro de identificación del vehículo.',actions:['Restablecer condiciones normales.','Completar datos de vehículo y medidas adoptadas.']}
+    }
+  },
+
+  '110-AMB': {
+    code:'110-AMB', category:'AMB', level:'Prealerta', title:'Fenómenos meteorológicos adversos',
+    keywords:['boira','niebla','lluvia','viento','nieve','granizo','meteorología','visibilidad'],
+    phases:['Detección','Verificación','Medidas','Seguimiento','Cierre'],
+    description:'Fenómeno atmosférico de intensidad que puede suponer peligro para la circulación, pero que no la imposibilita.',
+    location:'Exterior del túnel.',
+    detection:['Aviso del Centre de Control de BCASA.','Estación meteorológica del túnel.','Alarma procedente de visibilímetros.','Observación por cámaras, personal de mantenimiento o llamada de usuario.','Visibilidad reducida inferior a 300 m.'],
+    info:['Tipo de incidente.','Tramo afectado.','Fecha y hora de detección.','Medidas adoptadas.'],
+    nodes:{
+      start:{phase:0,type:'choice',title:'Fenómeno meteorológico',help:'Selecciona el fenómeno principal observado o comunicado.',question:'¿Qué fenómeno se ha detectado?',actions:['Consultar central meteorológica/cámaras.','Registrar tramo afectado.'],options:[
+        {label:'Niebla',next:'verify'},
+        {label:'Lluvia intensa',next:'verify'},
+        {label:'Viento fuerte',next:'verify'},
+        {label:'Nieve / granizo',next:'snow',tone:'warn'}
+      ]},
+      snow:{phase:1,type:'choice',title:'Nieve o granizo',help:'El punto crítico es si imposibilita la circulación.',question:'¿Imposibilita la circulación?',actions:['Verificar cámaras y datos meteorológicos.','Avisar a CGM y BCASA.'],options:[
+        {label:'Sí, imposibilita circular',next:'snowEscalation',tone:'warn'},
+        {label:'No, circulación posible',next:'measures',tone:'yes'}
+      ]},
+      verify:{phase:1,type:'choice',title:'Verificación central meteorológica / cámaras',help:'Confirma si el fenómeno realmente afecta al entorno del túnel.',question:'¿Se confirma el fenómeno?',actions:['Visualizar cámaras.','Contrastar con estación meteorológica o aviso recibido.'],options:[
+        {label:'Sí, confirmado',next:'measures',tone:'yes'},
+        {label:'No, no confirmado',next:'falseAlarm',tone:'no'}
+      ]},
+      measures:{phase:2,type:'action',title:'Medidas de explotación',help:'Aplica medidas de baja carga visual para el operador.',actions:['CTTV: visualizar cámaras del tramo afectado.','Señalización: niebla / lluvia intensa / viento fuerte / nieve.','Avisos: CGM y BCASA.','Iluminación: refuerzo si procede.'],next:'monitor'},
+      monitor:{phase:3,type:'choice',title:'Seguimiento de la evolución',help:'Mantén la situación activa hasta que se normalicen las condiciones.',question:'¿Situación normalizada?',actions:['Seguir evolución del fenómeno.','Mantener medidas mientras dure el riesgo.'],options:[
+        {label:'Sí, normalizada',next:'end',tone:'yes'},
+        {label:'No, continuar seguimiento',next:'monitor',tone:'warn'}
+      ]},
+      snowEscalation:{phase:2,type:'terminal',status:'Derivación',title:'Escalar a 310-AMB',summary:'La nieve o granizo imposibilita la circulación. Debe tratarse como calamarsa/nevada intensa.',actions:['Registrar derivación a 310-AMB.','Mantener señalización y avisos.','Coordinar medidas superiores según PAU.']},
+      falseAlarm:{phase:4,type:'terminal',status:'Sin confirmación',title:'Fenómeno no confirmado',summary:'Cierra como aviso no confirmado si no hay afección operativa.',actions:['Registrar comprobaciones realizadas.','Mantener vigilancia ordinaria.']},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de situación de riesgo',summary:'Restablece condiciones normales de explotación.',actions:['Restablecer condiciones normales.','Cerrar registro.']}
+    }
+  },
+
+  '115-AMB': {
+    code:'115-AMB', category:'AMB', level:'Prealerta', title:'Alto nivel de opacidad / visibilidad reducida',
+    keywords:['opacidad','opacímetro','visibilidad reducida','humo','retenciones','ventilación'],
+    phases:['Detección','Nivel','Causa','Medidas','Cierre'],
+    description:'Visibilidad reducida cuando el valor de opacímetros se sitúa entre umbrales de prealerta y alerta.',
+    location:'Interior del túnel.',
+    detection:['Alarma SCADA por detectores de opacidad.','Tráfico denso o retenciones.','Vehículos con alto grado de emisión.','Mal funcionamiento de ventilación o avería de opacímetro.'],
+    thresholds:{type:'opacity'},
+    info:['Tipo de incidente.','Localización.','Fecha y hora.','Verificación de la causa.','Condiciones de tráfico.','Perspectivas de afección.','Medidas adoptadas.'],
+    nodes:{
+      start:{phase:0,type:'opacityInput',title:'Valor de opacidad',help:'Introduce el valor K del opacímetro. El detalle de umbrales queda disponible en “Detalle técnico”.'},
+      levelOk:{phase:1,type:'action',title:'Prealerta por opacidad',help:'Aplica medidas y busca la causa sin saturar la pantalla.',actions:['CTTV: visualizar cámaras.','Señalización: MODERE VELOCIDAD.','Ventilación: confirmar régimen y corregir si procede.'],next:'cause'},
+      cause:{phase:2,type:'choice',title:'Identificar causa',help:'La causa determina si se debe derivar a otro protocolo.',question:'¿Cuál parece la causa principal?',actions:['Comprobar tráfico y posible origen de humo.','Registrar causa verificada o probable.'],options:[
+        {label:'Retenciones',hint:'Derivar a circulación muy lenta.',next:'route140',tone:'warn'},
+        {label:'Incendio / humo',hint:'Derivar a incendio.',next:'route400',tone:'warn'},
+        {label:'Otros / detector / ventilación',next:'monitor'}
+      ]},
+      monitor:{phase:3,type:'choice',title:'Supervisión de opacidad',help:'Mantén vigilancia hasta que el valor baje de prealerta.',question:'¿El valor está por debajo de prealerta?',actions:['Supervisar tendencia de opacidad.','Mantener ventilación corregida si procede.'],options:[
+        {label:'Sí',next:'end',tone:'yes'},
+        {label:'No',next:'monitor',tone:'warn'}
+      ]},
+      route140:{phase:3,type:'terminal',status:'Derivación',title:'Derivar a 140-TRA',summary:'La opacidad parece asociada a retenciones o circulación lenta.',actions:['Abrir/registrar protocolo 140-TRA.','Mantener ventilación y señalización.'],jump:'140-TRA'},
+      route400:{phase:3,type:'terminal',status:'Derivación urgente',title:'Derivar a 400-FOC',summary:'Posible incendio, explosión o pérdida súbita de visibilidad.',actions:['Escalar a protocolo 400-FOC.','Mantener CTTV y avisos operativos.','No esperar a que la situación evolucione si hay indicios de fuego.']},
+      escalate:{phase:1,type:'terminal',status:'Escalado',title:'Umbral de alerta/cierre superado',summary:'El valor supera el ámbito de prealerta de este asistente.',actions:['Escalar a 215-AMB o nivel superior según PAU.','Mantener señalización y ventilación.','Registrar valor y detector.']},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de situación de riesgo',summary:'Restablece condiciones normales de explotación.',actions:['Restablecer condiciones normales.','Cerrar registro.']}
+    }
+  },
+
+  '120-AMB': {
+    code:'120-AMB', category:'AMB', level:'Prealerta', title:'Alta concentración de CO/NOx',
+    keywords:['CO','NOx','NO2','NO','gas','gases','contaminación','ventilación','monóxido'],
+    phases:['Detección','Nivel','Causa','Medidas','Cierre'],
+    description:'Alarma por concentración elevada de CO, NO₂ o NO dentro del túnel.',
+    location:'Interior del túnel.',
+    detection:['Alarma SCADA por detectores de CO o NOx.','Tráfico denso o retenciones.','Vehículos con alto grado de emisión.','Mal funcionamiento de ventilación o fallo de detector.','Concentración alta de CO puede ser indicativa de origen de incendio.'],
+    thresholds:{type:'gases'},
+    info:['Tipo de incidente.','Localización.','Fecha y hora.','Verificación de causa.','Condiciones de tráfico.','Perspectivas de afección.','Medidas adoptadas.'],
+    nodes:{
+      start:{phase:0,type:'gasInput',title:'Concentración de gases',help:'Selecciona gas y valor. Si hay personas dentro, el asistente destacará la vigilancia reforzada.'},
+      levelOk:{phase:1,type:'action',title:'Prealerta por gases',help:'Actúa con el mínimo de datos visibles y conserva los umbrales en el detalle técnico.',actions:['CTTV: visualizar cámaras.','Señalización: MODERE VELOCIDAD.','Ventilación: confirmar régimen y corregir si procede.'],next:'cause'},
+      peopleWarning:{phase:1,type:'action',title:'Personas dentro del túnel',help:'Hay personal, peatones o mantenimiento dentro. La vigilancia de gases debe ser especialmente diligente.',actions:['Extremar vigilancia de CO y NOx.','Priorizar comunicación con personal presente.','Confirmar ventilación y condiciones de evacuación si empeora.'],next:'cause'},
+      cause:{phase:2,type:'choice',title:'Identificar causa',help:'La causa probable orienta la derivación.',question:'¿Cuál parece la causa principal?',actions:['Comprobar si hay retención.','Descartar incendio mediante CTTV.','Comprobar estado de ventilación/detectores.'],options:[
+        {label:'Retenciones',hint:'Derivar a circulación muy lenta.',next:'route140',tone:'warn'},
+        {label:'Incendio / indicios de fuego',hint:'CO alto puede apuntar a incendio.',next:'route400',tone:'warn'},
+        {label:'Ventilación / detector / otros',next:'monitor'}
+      ]},
+      monitor:{phase:3,type:'choice',title:'Supervisión de la concentración',help:'Mantén la situación activa hasta bajar de prealerta.',question:'¿El valor está por debajo de prealerta?',actions:['Supervisar niveles de contaminación.','Comprobar funcionamiento de ventilación.'],options:[
+        {label:'Sí',next:'end',tone:'yes'},
+        {label:'No',next:'monitor',tone:'warn'}
+      ]},
+      route140:{phase:3,type:'terminal',status:'Derivación',title:'Derivar a 140-TRA',summary:'La concentración parece relacionada con circulación muy lenta o retenciones.',actions:['Abrir/registrar protocolo 140-TRA.','Mantener ventilación y seguimiento de gases.'],jump:'140-TRA'},
+      route400:{phase:3,type:'terminal',status:'Derivación urgente',title:'Derivar a 400-FOC',summary:'Posibles indicios de incendio. Este asistente aún no desarrolla 400-FOC.',actions:['Escalar a protocolo 400-FOC.','Mantener CTTV, avisos y ventilación según instrucciones superiores.']},
+      escalate:{phase:1,type:'terminal',status:'Escalado',title:'Umbral de alerta/cierre superado',summary:'El valor supera el ámbito de prealerta de este asistente.',actions:['Escalar a 220-AMB o 320-AMB según umbral y criterio operativo.','Registrar gas, valor, detector, tubo y sentido.','Mantener ventilación y señalización.']},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de situación de riesgo',summary:'Restablece condiciones normales de explotación.',actions:['Restablecer condiciones normales.','Cerrar registro.']}
+    }
+  },
+
+  '130-TRA': {
+    code:'130-TRA', category:'TRA', level:'Prealerta', title:'Presencia de personal trabajando',
+    keywords:['personal','trabajos','mantenimiento','carril','voral','galerías','local técnico','IMH'],
+    phases:['Solicitud','Autorización','Ubicación','Medidas','Cierre'],
+    description:'Presencia o solicitud de trabajos de personal dentro de tubos, galerías o locales técnicos.',
+    location:'Túnel, galerías o locales técnicos.',
+    detection:['Solicitud/planificación de trabajos.','Presencia de mantenimiento.','Necesidad urgente de intervención.'],
+    info:['Tipo de incidente/trabajo.','Localización.','Hora de inicio y fin prevista.','Condiciones de tráfico.','Perspectivas de afección.','Medidas adoptadas.'],
+    nodes:{
+      start:{phase:0,type:'choice',title:'Trabajos en el entorno del túnel',help:'Primero decide si los trabajos están autorizados o si se trata de una intervención urgente.',question:'¿Los trabajos están autorizados?',actions:['Registrar localización y hora prevista.','Comprobar condiciones de tráfico.'],options:[
+        {label:'Sí, autorizados',next:'traffic',tone:'yes'},
+        {label:'No',next:'urgent',tone:'warn'}
+      ]},
+      urgent:{phase:1,type:'choice',title:'Trabajos no autorizados',help:'El PAU diferencia la urgencia antes de permitir continuidad.',question:'¿Es urgente intervenir?',actions:['No autorizar salvo urgencia justificada.','Registrar motivo.'],options:[
+        {label:'Sí, urgente',next:'traffic',tone:'warn'},
+        {label:'No, no autorizar',next:'notAuthorized',tone:'no'}
+      ]},
+      traffic:{phase:1,type:'choice',title:'Condición de tráfico',help:'Valora si la intensidad o condiciones de tráfico permiten los trabajos.',question:'¿IMH > 2000 o tráfico denso?',actions:['Comprobar tráfico mediante CTTV/sistemas.','Valorar afección a circulación.'],options:[
+        {label:'Sí',hint:'No autorizar salvo urgencia.',next:'urgentWhenDense',tone:'warn'},
+        {label:'No',next:'location',tone:'yes'}
+      ]},
+      urgentWhenDense:{phase:1,type:'choice',title:'Tráfico denso',help:'Con tráfico denso, solo continuar si es urgente.',question:'¿La intervención es urgente?',actions:['Registrar decisión.'],options:[
+        {label:'Sí, urgente',next:'location',tone:'warn'},
+        {label:'No, no autorizar',next:'notAuthorized',tone:'no'}
+      ]},
+      location:{phase:2,type:'choice',title:'Ubicación de los trabajos',help:'La medida cambia si los trabajos están en carril/voral, eixamplament o galerías/locales.',question:'¿Dónde se realizan los trabajos?',actions:['CTTV: visualizar cámaras.','Comprobar niveles de contaminantes.'],options:[
+        {label:'Carril / voral',hint:'Requiere cierre de carril.',next:'laneWork',tone:'warn'},
+        {label:'Eixamplament',hint:'Aplicar precaución.',next:'wideningWork'},
+        {label:'Galerías / locales técnicos',hint:'Supervisar ventilación.',next:'technicalRooms'}
+      ]},
+      laneWork:{phase:3,type:'terminal',status:'Derivación',title:'Aplicar protocolo de cierre de carril',summary:'Los trabajos en carril/voral requieren tratamiento específico de cierre de carril.',actions:['Aplicar protocolo de cierre de carril.','Reforzar iluminación.','Supervisar ventilación y contaminantes.','Registrar inicio/fin de trabajos.']},
+      wideningWork:{phase:3,type:'action',title:'Trabajos en eixamplament',help:'Se aplica precaución con seguimiento y refuerzo si procede.',actions:['Aplicar protocolo de precaución.','Reforzar iluminación.','Supervisar niveles de contaminantes.'],next:'monitor'},
+      technicalRooms:{phase:3,type:'action',title:'Trabajos en galerías o locales técnicos',help:'La prioridad es la supervisión de ventilación y contaminantes.',actions:['Confirmar régimen de ventilación.','Corregir ventilación si procede.','Registrar personal y duración prevista.'],next:'monitor'},
+      monitor:{phase:3,type:'choice',title:'Seguimiento de trabajos',help:'Mantén el protocolo hasta finalizar los trabajos.',question:'¿Han finalizado los trabajos?',actions:['Supervisar ventilación.','Mantener registro de inicio/fin.'],options:[
+        {label:'Sí, finalizados',next:'end',tone:'yes'},
+        {label:'No, continúan',next:'monitor',tone:'warn'}
+      ]},
+      notAuthorized:{phase:4,type:'terminal',status:'No autorizado',title:'No autorizar trabajos',summary:'Los trabajos no deben comenzar/continuar en las condiciones actuales.',actions:['Registrar denegación.','Informar al solicitante.','Mantener explotación normal.']},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de trabajos',summary:'Restablece condiciones normales de explotación.',actions:['Restablecer condiciones normales.','Cerrar registro.']}
+    }
+  },
+
+  '140-TRA': {
+    code:'140-TRA', category:'TRA', level:'Prealerta', title:'Circulación muy lenta',
+    keywords:['retención','lento','velocidad','20 km/h','congestión','tráfico lento'],
+    phases:['Detección','Confirmación','Medidas','Seguimiento','Cierre'],
+    description:'Retenciones con circulación lenta, v ≤ 20 km/h, sin parada total y no derivadas directamente de accidente mayor.',
+    location:'Interior del túnel.',
+    detection:['DAI.','Observación directa por CTTV o personal.','Detectores de tráfico/espires.','Descenso importante de velocidad sin parada total.','Alto grado de ocupación de carril.'],
+    info:['Tipo de incidente.','Localización.','Fecha y hora.','Longitud aproximada de retención.','Velocidad media.','Causa de la retención.'],
+    nodes:{
+      start:{phase:0,type:'choice',title:'Circulación muy lenta',help:'Confirma que no hay parada total ni accidente que requiera otro protocolo.',question:'¿Velocidad ≤ 20 km/h sin parada total?',actions:['Visualizar CTTV.','Estimar longitud de retención y velocidad media.'],options:[
+        {label:'Sí, circulación lenta',next:'cause',tone:'yes'},
+        {label:'No / hay parada o accidente',next:'otherProtocol',tone:'warn'}
+      ]},
+      cause:{phase:1,type:'choice',title:'Causa de la retención',help:'Registra la causa probable para el informe.',question:'¿Cuál es la causa principal?',actions:['Verificar que no sea consecuencia directa de accidente mayor.'],options:[
+        {label:'Alta intensidad de tráfico',next:'measures'},
+        {label:'Vehículo lento',next:'measures'},
+        {label:'Otra causa / dudoso',next:'measures'}
+      ]},
+      measures:{phase:2,type:'action',title:'Medidas por circulación lenta',help:'Aplica señalización, ventilación y avisos.',actions:['Señalización: advertir circulación lenta / modere velocidad.','CTTV: seguimiento de cola y puntos críticos.','Ventilación: supervisar contaminación y comprobar funcionamiento.','Avisos: CGM.'],next:'monitor'},
+      monitor:{phase:3,type:'choice',title:'Seguimiento de la retención',help:'Mantén el protocolo hasta recuperar condiciones normales.',question:'¿Circulación normalizada?',actions:['Actualizar longitud de retención.','Supervisar niveles de contaminación.'],options:[
+        {label:'Sí, normalizada',next:'end',tone:'yes'},
+        {label:'No, continúa lenta',next:'monitor',tone:'warn'}
+      ]},
+      otherProtocol:{phase:4,type:'terminal',status:'Reclasificar',title:'Revisar protocolo',summary:'Si hay parada total, accidente o incidencia mayor, debe reclasificarse.',actions:['Valorar 150-TRA, 250-TRA, 270-TRA u otro protocolo según situación.','Registrar motivo de reclasificación.']},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de circulación lenta',summary:'Restablece condiciones normales de explotación.',actions:['Restablecer condiciones normales.','Cerrar registro.']}
+    }
+  },
+
+  '150-TRA': {
+    code:'150-TRA', category:'TRA', level:'Prealerta', title:'Vehículo detenido en eixamplament',
+    keywords:['vehículo detenido','eixamplament','apartador','SOS','avería','malestar','retirado'],
+    phases:['Detección','Ubicación','Medidas','Seguimiento','Cierre'],
+    description:'Vehículo detenido en un eixamplament o apartador del túnel.',
+    location:'Interior del túnel.',
+    detection:['DAI.','Observación directa por CTTV o personal.','Llamada de usuario al Centro de Control.','Llamada desde poste SOS.','Avería, malestar del conductor o pequeño accidente.'],
+    info:['Tipo de incidente.','Localización.','Fecha y hora.','Causa de la detención.','Si es infracción: tipo, vehículo, matrícula si puede registrarse.','Medidas adoptadas.'],
+    nodes:{
+      start:{phase:0,type:'choice',title:'Vehículo detenido',help:'Confirma que está realmente en eixamplament/apartador y no obstaculizando carril.',question:'¿Está detenido en eixamplament/apartador?',actions:['Visualizar cámara más cercana al incidente.','Registrar ubicación exacta.'],options:[
+        {label:'Sí, en eixamplament',next:'pedestrians',tone:'yes'},
+        {label:'No, obstaculiza carril',next:'route250',tone:'warn'}
+      ]},
+      pedestrians:{phase:1,type:'choice',title:'Presencia de peatones',help:'Si hay ocupantes o peatones en calzada, se activa megafonía.',question:'¿Hay peatones u ocupantes en calzada?',actions:['Mantener CTTV sobre vehículo y entorno.'],options:[
+        {label:'Sí',next:'measuresPedestrians',tone:'warn'},
+        {label:'No',next:'measures',tone:'yes'}
+      ]},
+      measuresPedestrians:{phase:2,type:'action',title:'Medidas con peatones en calzada',help:'Además de la señalización, activa megafonía.',actions:['Megafonía: advertir a peatones en calzada.','Señalización: vehículo parado en eixamplament.','Avisos: SCC.','Radiodifusión: vehículo parado en eixamplament.','Iluminación: subir nivel si procede.'],next:'monitor'},
+      measures:{phase:2,type:'action',title:'Medidas por vehículo en eixamplament',help:'Actúa sin cargar la pantalla con todo el procedimiento completo.',actions:['CTTV: cámara más cercana al incidente.','Señalización: vehículo parado en eixamplament.','Avisos: SCC.','Radiodifusión: vehículo parado en eixamplament.','Iluminación: subir nivel si procede.'],next:'monitor'},
+      monitor:{phase:3,type:'choice',title:'Supervisión de la situación',help:'Comprueba la retirada y que no se genere otra incidencia.',question:'¿Vehículo retirado?',actions:['Comprobar por CTTV la retirada del vehículo.','Comprobar que no se genera otro accidente.'],options:[
+        {label:'Sí, retirado',next:'end',tone:'yes'},
+        {label:'No, continúa detenido',next:'monitor',tone:'warn'}
+      ]},
+      route250:{phase:4,type:'terminal',status:'Derivación',title:'Derivar a 250-TRA',summary:'El vehículo obstaculiza carril; no corresponde al 150-TRA.',actions:['Registrar derivación a vehículo detenido obstaculizando carril.','Mantener CTTV y señalización preventiva.']},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de vehículo detenido',summary:'Restablece condiciones normales de explotación.',actions:['Restablecer condiciones normales.','Cerrar registro.']}
+    }
+  },
+
+  '160-AVA': {
+    code:'160-AVA', category:'AVA', level:'Prealerta', title:'Avería en sistemas o daños estructurales leves',
+    keywords:['avería','sistemas','daños','estructura','fissures','humedades','filtraciones','ventiladores','SCADA'],
+    phases:['Detección','Clasificación','Medidas','Seguimiento','Cierre'],
+    description:'Avería menor en sistemas que no pone en peligro la seguridad del tráfico o daños menores en infraestructura.',
+    location:'Locales técnicos, equipos remotos, revestimientos, techos, paredes o galerías.',
+    detection:['Alarma técnica de aplicación de control.','Observación directa del personal de explotación/mantenimiento.','Llamadas de usuarios.','Avería menor, pequeños daños, pequeñas afluencias de agua, fisuras o desgaste.'],
+    info:['Tipo de incidente.','Localización.','Fecha y hora.','Secciones parcialmente afectadas que no ocupan calzada.','Medidas adoptadas.','Condiciones de tráfico e itinerarios de acceso.','Origen de la avería.','Tiempo previsto de resolución.'],
+    nodes:{
+      start:{phase:0,type:'choice',title:'Avería o daño leve',help:'El 160-AVA solo aplica si no hay riesgo inmediato ni afección grave a la calzada.',question:'¿Es leve y no compromete la seguridad del tráfico?',actions:['Registrar alarma, equipo o daño observado.','Comprobar si hay afección a calzada.'],options:[
+        {label:'Sí, leve',next:'type',tone:'yes'},
+        {label:'No, medio/grave',next:'escalate',tone:'warn'}
+      ]},
+      type:{phase:1,type:'choice',title:'Tipo de incidencia técnica',help:'Clasifica para informar mejor a mantenimiento.',question:'¿Qué tipo de incidencia predomina?',actions:['Registrar origen probable y localización.'],options:[
+        {label:'Sistema / equipo',next:'measures'},
+        {label:'Daño estructural leve',next:'measures'},
+        {label:'Filtración / humedad leve',next:'measures'},
+        {label:'Otro',next:'measures'}
+      ]},
+      measures:{phase:2,type:'action',title:'Medidas iniciales',help:'La actuación principal es registrar, avisar y vigilar que no empeore.',actions:['Avisar a Equipo de Mantenimiento.','Registrar fallo/daño, ubicación y alcance.','Estimar duración de resolución.','Supervisar tráfico y accesos de mantenimiento.'],next:'monitor'},
+      monitor:{phase:3,type:'choice',title:'Seguimiento de avería',help:'Reclasifica si empeora o empieza a afectar a seguridad/tráfico.',question:'¿La avería está resuelta o controlada?',actions:['Comprobar evolución.','Actualizar tiempo previsto de resolución.'],options:[
+        {label:'Sí, resuelta/controlada',next:'end',tone:'yes'},
+        {label:'No, pero estable',next:'monitor',tone:'warn'},
+        {label:'Empeora',next:'escalate',tone:'warn'}
+      ]},
+      escalate:{phase:4,type:'terminal',status:'Escalado',title:'Escalar a 260-AVA / 360-AVA',summary:'La incidencia excede el ámbito leve del 160-AVA.',actions:['Registrar motivo de escalado.','Activar protocolo de funcionamiento degradado o avería crítica según corresponda.','Mantener vigilancia hasta relevo operativo.']},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de avería leve',summary:'Restablece condiciones normales si procede y cierra registro.',actions:['Confirmar resolución con mantenimiento.','Cerrar registro.']}
+    }
+  },
+
+  '200-TRA': {
+    code:'200-TRA', category:'TRA', level:'Alerta', title:'Vertido de líquidos o materiales deslizantes',
+    keywords:['vessament','vertido','líquidos','pavimento deslizante','derrame','adherencia','incendio'],
+    phases:['Detección','Confirmación','Afección','Medidas','Cierre'],
+    description:'Vertido de líquidos u otros materiales cuya naturaleza o cantidad pueda provocar pérdida de adherencia y/o peligro de incendio.',
+    location:'Interior del túnel o cielo abierto.',
+    detection:['Observación directa por CTTV o personal de explotación.','Aviso por poste SOS.','Llamada exterior o del 112.','Pérdida parcial o total de contenido líquido o material transportado.','No incluye filtraciones de agua de la infraestructura.'],
+    info:['Tipo de incidente.','Localización.','Fecha y hora de detección.','Tipo de vertido si puede identificarse.','Duración estimada de la afección.','Medidas adoptadas.'],
+    nodes:{
+      start:{phase:0,type:'action',title:'Vertido detectado',help:'Prioriza confirmar visualmente el alcance y activar el nivel de alerta.',actions:['CTTV: visualizar cámara más cercana al incidente.','Activar PAU en ALERTA.','Aviso inicial al Equipo de Conservación.','Aplicar protocolo de precaución por pavimento deslizante.'],next:'danger'},
+      danger:{phase:1,type:'choice',title:'Naturaleza del vertido',help:'El punto crítico es si el vertido puede ser peligroso o inflamable.',question:'¿El vertido parece peligroso, inflamable o de gran entidad?',actions:['Intentar identificar tipo de líquido/material sin retrasar medidas de seguridad.','Registrar si procede de un vehículo o carga.'],options:[
+        {label:'Sí, peligroso / gran entidad',next:'tubeClosure',tone:'warn'},
+        {label:'No confirmado',next:'lanes',tone:'warn'},
+        {label:'No, aparentemente menor',next:'lanes',tone:'yes'}
+      ]},
+      lanes:{phase:2,type:'choice',title:'Afección a carriles',help:'El PAU diferencia cierre de tubo frente a cierre de carril/es.',question:'¿Afecta a dos carriles o más?',actions:['Mantener señalización de precaución por pavimento deslizante.','Subir iluminación a nivel normal si procede.'],options:[
+        {label:'Sí, dos o más carriles',next:'tubeClosure',tone:'warn'},
+        {label:'No, un carril o zona limitada',next:'laneClosure',tone:'yes'}
+      ]},
+      tubeClosure:{phase:3,type:'action',title:'Cierre de tubo',help:'Vertido peligroso o afección amplia: tratar como cierre de tubo.',actions:['Aplicar protocolo de cierre de tubo.','Señalización: TÚNEL CERRADO / corte de tubo.','Megafonía y radiodifusión: apagar motores si procede.','Avisos: Bombers, Equipo de Mantenimiento, Sala Conjunta de Comandament, Centre de Gestió de la Mobilitat y CECAT.'],next:'cleaning'},
+      laneClosure:{phase:3,type:'action',title:'Cierre de carril/es',help:'Afección limitada sin indicio de peligro mayor.',actions:['Aplicar protocolo de cierre de carril/es.','Radiodifusión: pavimento deslizante.','Señalización: precaución / pavimento deslizante.','Avisos: Equipo de Mantenimiento, Sala Conjunta de Comandament y Centre de Gestió de la Mobilitat.','Aviso a Bombers opcional según naturaleza del vertido.'],next:'cleaning'},
+      cleaning:{phase:4,type:'choice',title:'Supervisión y limpieza',help:'El protocolo sigue activo hasta confirmar limpieza y desaparición del riesgo.',question:'¿Vertido retirado y pavimento seguro?',actions:['Supervisar la situación.','Comprobar limpieza del vertido.','Registrar duración de la afección.'],options:[
+        {label:'Sí, limpio y seguro',next:'end',tone:'yes'},
+        {label:'No, continuar',next:'cleaning',tone:'warn'}
+      ]},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de vertido',summary:'Desactiva PAU en alerta y restablece explotación normal.',actions:['Restablecer condiciones normales de explotación.','Desactivar PAU en ALERTA.','Cerrar registro.']}
+    }
+  },
+
+  '210-TRA': {
+    code:'210-TRA', category:'TRA', level:'Alerta', title:'Detección de exceso de gálibo en túnel',
+    keywords:['gálibo','altura','5 metros','exceso','control de altura','vehículo alto'],
+    phases:['Detección','Cierre','Decisión','Supervisión','Cierre'],
+    description:'Vehículo con exceso de gálibo detectado en controles previos, sin obedecer parada o desvío.',
+    location:'Túnel o accesos.',
+    detection:['Sistema de control de altura / controles de gálibo.','Vehículo con exceso de gálibo de 5 metros.'],
+    info:['Tipo de incidente.','Localización.','Fecha y hora.','Identificación del vehículo infractor.','Medidas adoptadas.','Perspectivas de afección al tráfico.','Condiciones de tráfico.','Trayecto del vehículo infractor mediante CTTV.'],
+    nodes:{
+      start:{phase:0,type:'action',title:'Exceso de gálibo detectado',help:'Activa el nivel de alerta y evita que el vehículo alcance el tramo cubierto si es posible.',actions:['Activar PAU en ALERTA.','Aplicar protocolo de cierre de carril.','Avisos: SCC, CGM y Equipo de Vialidad.','Registrar modelo, color y matrícula si es posible.'],next:'stopBeforeMouth'},
+      stopBeforeMouth:{phase:1,type:'choice',title:'Parada antes de la boca',help:'La decisión principal es si el vehículo se detiene antes de entrar.',question:'¿El vehículo se detiene antes de la boca del túnel?',actions:['Mantener seguimiento CTTV del vehículo.','Mantener cierre de carril mientras exista riesgo.'],options:[
+        {label:'Sí, detenido antes de boca',next:'escort',tone:'yes'},
+        {label:'No, entra o continúa',next:'damage',tone:'warn'}
+      ]},
+      escort:{phase:2,type:'action',title:'Vehículo detenido',help:'Coordina retirada o escolta fuera del itinerario de riesgo.',actions:['Mantener protocolo de cierre de carril.','Avisar/coordinar Guàrdia Urbana.','Escolta o cruce de mediana si procede.','Registrar trayectoria y medidas adoptadas.'],next:'monitor'},
+      damage:{phase:2,type:'choice',title:'Comprobación de daños',help:'Si ha producido daños, el PAU deriva a avería crítica o accidente con pesados.',question:'¿Ha producido daños o impacto en infraestructura/instalaciones?',actions:['Visualizar cámaras del recorrido.','Comprobar si hay afección estructural o accidente.'],options:[
+        {label:'Sí, daños estructurales/filtración',next:'route360',tone:'warn'},
+        {label:'Sí, accidente con vehículo pesado',next:'route370',tone:'warn'},
+        {label:'No consta daño',next:'monitor'}
+      ]},
+      monitor:{phase:3,type:'choice',title:'Supervisión de la situación',help:'Mantén alerta hasta que desaparezca el riesgo.',question:'¿Fin del riesgo?',actions:['Supervisar evolución.','Mantener avisos y cierre hasta retirada o normalización.'],options:[
+        {label:'Sí',next:'end',tone:'yes'},
+        {label:'No',next:'monitor',tone:'warn'}
+      ]},
+      route360:{phase:4,type:'terminal',status:'Derivación grave',title:'Derivar a 360-AVA',summary:'Existen daños estructurales, filtraciones o avería crítica.',actions:['Registrar derivación a 360-AVA.','Mantener restricciones de tráfico.','Coordinar servicios técnicos.']},
+      route370:{phase:4,type:'terminal',status:'Derivación grave',title:'Derivar a 370-TRA',summary:'Accidente con presencia de vehículo pesado.',actions:['Registrar derivación a 370-TRA.','Mantener CTTV, avisos y restricciones.','Coordinar ayuda externa si procede.']},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin del exceso de gálibo',summary:'Restablece condiciones normales y desactiva PAU en alerta.',actions:['Restablecer condiciones normales.','Desactivar PAU en ALERTA.','Cerrar registro.']}
+    }
+  },
+
+  '215-AMB': {
+    code:'215-AMB', category:'AMB', level:'Alerta', title:'Muy alto nivel de opacidad',
+    keywords:['opacidad','opacímetro','visibilidad','humo','retenciones','alerta'],
+    phases:['Detección','Nivel','Causa','Medidas','Cierre'],
+    description:'Nivel de opacidad situado en rango de alerta, con visibilidad reducida relevante en el interior del túnel.',
+    location:'Interior del túnel.',
+    detection:['Alarma SCADA por detector de opacidad.','Tráfico denso o retenciones.','Vehículos con alto grado de emisión.','Avería de opacímetro.'],
+    thresholds:{type:'opacity'},
+    info:['Tipo de incidente.','Localización.','Fecha y hora.','Verificación de la causa.','Condiciones de tráfico.','Perspectivas de afección.','Medidas adoptadas.'],
+    nodes:{
+      start:{phase:0,type:'opacityInput',minSeverity:2,maxProceedSeverity:2,escalateNode:'route315',title:'Valor de opacidad en alerta',help:'Introduce K. Si está por debajo de alerta se sugerirá volver a 115-AMB; si está por encima de emergencia se derivará a 315-AMB.'},
+      belowThreshold:{phase:1,type:'terminal',status:'Rebaja de nivel',title:'Valor por debajo de alerta',summary:'El valor no corresponde a 215-AMB. Debe tratarse como 115-AMB si sigue por encima de prealerta.',actions:['Valorar cambio a 115-AMB.','Mantener CTTV, ventilación y señalización si sigue habiendo riesgo.'],jump:'115-AMB'},
+      levelOk:{phase:1,type:'action',title:'Activación PAU en alerta',help:'Con nivel de alerta confirmado, identifica causa y aplica medidas.',actions:['CTTV: visualizar cámaras.','Activar PAU en ALERTA.','Registrar valor K y opacímetro asociado.'],next:'cause'},
+      cause:{phase:2,type:'choice',title:'Identificar causa',help:'La causa determina derivación o medidas de explotación.',question:'¿Cuál parece la causa principal?',actions:['Comprobar retenciones.','Descartar incendio o humo anómalo.'],options:[
+        {label:'Retenciones',next:'route140',tone:'warn'},
+        {label:'Incendio / humo',next:'route400',tone:'warn'},
+        {label:'Otros / detector / ventilación',next:'measures'}
+      ]},
+      measures:{phase:3,type:'action',title:'Medidas por opacidad en alerta',help:'Aplica medidas de reducción de riesgo y avisos.',actions:['Señalización: MODERE VELOCIDAD.','Ventilación: confirmar régimen y corregir si procede.','Iluminación: subir a nivel normal si estaba a medio flujo.','Avisos: SCC, CGM y Equipo de Mantenimiento/Vialidad.'],next:'monitorEmergency'},
+      monitorEmergency:{phase:3,type:'choice',title:'Supervisión de opacidad',help:'Primero descarta que haya pasado a emergencia.',question:'¿Valores por encima de emergencia/cierre?',actions:['Supervisar tendencia.','Mantener medidas mientras no baje.'],options:[
+        {label:'Sí, emergencia/cierre',next:'route315',tone:'warn'},
+        {label:'No',next:'monitorAlert'}
+      ]},
+      monitorAlert:{phase:4,type:'choice',title:'Descenso de nivel',help:'Comprueba si baja de alerta o de prealerta.',question:'¿Los valores están por debajo de prealerta?',actions:['Registrar evolución de K.'],options:[
+        {label:'Sí, bajo prealerta',next:'end',tone:'yes'},
+        {label:'No, pero bajo alerta',next:'route115'},
+        {label:'No, sigue en alerta',next:'monitorEmergency',tone:'warn'}
+      ]},
+      route140:{phase:3,type:'terminal',status:'Derivación',title:'Derivar a 140-TRA',summary:'La causa parece tráfico denso o retenciones.',actions:['Abrir/registrar 140-TRA.','Mantener ventilación, señalización y seguimiento de opacidad.'],jump:'140-TRA'},
+      route400:{phase:3,type:'terminal',status:'Derivación urgente',title:'Derivar a 400-FOC',summary:'Indicios de incendio o humo. Debe aplicarse protocolo de incendio.',actions:['Escalar a 400-FOC.','Mantener CTTV y avisos.']},
+      route315:{phase:4,type:'terminal',status:'Escalado',title:'Derivar a 315-AMB',summary:'Opacidad en umbral de emergencia/cierre.',actions:['Registrar valor y detector.','Mantener medidas de seguridad.','Escalar a 315-AMB.']},
+      route115:{phase:4,type:'terminal',status:'Rebaja de nivel',title:'Derivar a 115-AMB',summary:'La situación ya no está en alerta pero continúa por encima de prealerta.',actions:['Registrar rebaja a 115-AMB.','Mantener seguimiento hasta normalización.'],jump:'115-AMB'},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de opacidad en alerta',summary:'Restablece explotación normal y desactiva PAU en alerta.',actions:['Restablecer condiciones normales.','Desactivar PAU en ALERTA.','Cerrar registro.']}
+    }
+  },
+
+  '220-AMB': {
+    code:'220-AMB', category:'AMB', level:'Alerta', title:'Alta concentración de CO/NOx en alerta',
+    keywords:['CO','NOx','NO2','NO','gases','contaminación','alerta','ventilación'],
+    phases:['Detección','Nivel','Causa','Medidas','Cierre'],
+    description:'Concentración de CO/NOx en rango de alerta. Un CO elevado puede ser indicativo de origen de incendio.',
+    location:'Interior del túnel.',
+    detection:['Alarma SCADA por detector de CO o NOx.','Tráfico denso o retenciones.','Vehículos con alto grado de emisión.','Mal funcionamiento de ventilación o fallo de detector.','Alta concentración de CO como posible origen de incendio.'],
+    thresholds:{type:'gases'},
+    info:['Tipo de incidente.','Localización.','Fecha y hora.','Verificación de causa.','Condiciones de tráfico.','Perspectivas de afección.','Medidas adoptadas.'],
+    nodes:{
+      start:{phase:0,type:'gasInput',minSeverity:2,maxProceedSeverity:2,escalateNode:'route320',title:'Concentración de gases en alerta',help:'Introduce gas y valor. Si baja de alerta, se propondrá 120-AMB; si supera cierre, se derivará a 320-AMB.'},
+      belowThreshold:{phase:1,type:'terminal',status:'Rebaja de nivel',title:'Valor por debajo de alerta',summary:'El valor no corresponde a 220-AMB. Debe tratarse como 120-AMB si sigue por encima de prealerta.',actions:['Valorar cambio a 120-AMB.','Mantener CTTV, ventilación y señalización si sigue habiendo riesgo.'],jump:'120-AMB'},
+      levelOk:{phase:1,type:'action',title:'Activación PAU en alerta',help:'Nivel de alerta confirmado. Continúa con identificación de causa.',actions:['CTTV: visualizar cámaras.','Activar PAU en ALERTA.','Registrar gas, valor y detector asociado.'],next:'cause'},
+      peopleWarning:{phase:1,type:'action',title:'Personas en interior',help:'Con personas dentro, extremar vigilancia de contaminantes, especialmente CO.',actions:['Extremar vigilancia de CO si supera 20 ppm.','Priorizar comunicación con personal presente.','Confirmar ventilación y preparar medidas de evacuación si empeora.'],next:'cause'},
+      cause:{phase:2,type:'choice',title:'Identificar causa',help:'Las causas principales del PAU son retenciones, incendio o fallo/otros.',question:'¿Cuál parece la causa principal?',actions:['Comprobar retenciones.','Descartar incendio mediante CTTV.','Comprobar ventilación y detectores.'],options:[
+        {label:'Retenciones',next:'route140',tone:'warn'},
+        {label:'Incendio / indicios de fuego',next:'route400',tone:'warn'},
+        {label:'Ventilación / detector / otros',next:'measures'}
+      ]},
+      measures:{phase:3,type:'action',title:'Medidas por gases en alerta',help:'Aplica medidas de explotación y avisos.',actions:['Señalización: MODERE VELOCIDAD.','Ventilación: confirmar régimen y corregir si procede.','Avisos: SCC, CGM y Equipo de Mantenimiento/Vialidad.'],next:'monitorEmergency'},
+      monitorEmergency:{phase:3,type:'choice',title:'Supervisión de concentración',help:'Primero descarta paso a emergencia/cierre.',question:'¿Valores por encima de emergencia/cierre?',actions:['Supervisar niveles de CO/NOx.','Comprobar funcionamiento de ventilación.'],options:[
+        {label:'Sí, emergencia/cierre',next:'route320',tone:'warn'},
+        {label:'No',next:'monitorAlert'}
+      ]},
+      monitorAlert:{phase:4,type:'choice',title:'Descenso de nivel',help:'Comprueba si baja de alerta o de prealerta.',question:'¿Los valores están por debajo de prealerta?',actions:['Registrar evolución de gases.'],options:[
+        {label:'Sí, bajo prealerta',next:'end',tone:'yes'},
+        {label:'No, pero bajo alerta',next:'route120'},
+        {label:'No, sigue en alerta',next:'monitorEmergency',tone:'warn'}
+      ]},
+      route140:{phase:3,type:'terminal',status:'Derivación',title:'Derivar a 140-TRA',summary:'La concentración parece asociada a retenciones o circulación lenta.',actions:['Abrir/registrar 140-TRA.','Mantener ventilación y seguimiento de gases.'],jump:'140-TRA'},
+      route400:{phase:3,type:'terminal',status:'Derivación urgente',title:'Derivar a 400-FOC',summary:'CO alto o indicios de fuego: aplicar protocolo de incendio.',actions:['Escalar a 400-FOC.','Mantener CTTV, avisos y ventilación según instrucciones superiores.']},
+      route320:{phase:4,type:'terminal',status:'Escalado',title:'Derivar a 320-AMB',summary:'Concentración en umbral de emergencia/cierre.',actions:['Registrar gas, valor y detector.','Mantener medidas de seguridad.','Escalar a 320-AMB.']},
+      route120:{phase:4,type:'terminal',status:'Rebaja de nivel',title:'Derivar a 120-AMB',summary:'La situación ya no está en alerta pero continúa por encima de prealerta.',actions:['Registrar rebaja a 120-AMB.','Mantener seguimiento hasta normalización.'],jump:'120-AMB'},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de gases en alerta',summary:'Restablece explotación normal y desactiva PAU en alerta.',actions:['Restablecer condiciones normales.','Desactivar PAU en ALERTA.','Cerrar registro.']}
+    }
+  },
+
+  '230-TRA': {
+    code:'230-TRA', category:'TRA', level:'Alerta', title:'Presencia de peatones y vehículos no autorizados',
+    keywords:['peatón','vianant','bicicleta','ciclomotor','no autorizado','vehículo lento','tracción animal'],
+    phases:['Detección','Clasificación','Medidas','Seguimiento','Cierre'],
+    description:'Peatones caminando por acera o calzada y vehículos no autorizados en el túnel; también vehículos con velocidad anormalmente reducida.',
+    location:'Túnel, accesos o instalaciones.',
+    detection:['DAI.','Observación directa por CTTV o personal.','Aviso por poste SOS.','Llamada exterior o del 112.','Bicicletas, ciclomotores, vehículos de tracción animal o vehículos lentos no autorizados.'],
+    info:['Tipo de incidente.','Localización.','Fecha y hora.','Tipo de presencia.','Motivo del incidente.','Estado del tráfico.','Medidas adoptadas.'],
+    nodes:{
+      start:{phase:0,type:'action',title:'Presencia no autorizada',help:'Confirma visualmente y activa medidas de protección.',actions:['CTTV: visualizar cámara más cercana al incidente.','Activar PAU en ALERTA.','Iluminación: subir nivel si procede.','Aplicar protocolo de cierre de carril.'],next:'type'},
+      type:{phase:1,type:'choice',title:'Tipo de presencia',help:'Diferencia peatón de vehículo lento/no autorizado para emitir el mensaje adecuado.',question:'¿Qué se observa?',actions:['Registrar tipo de presencia y ubicación.'],options:[
+        {label:'Peatón / vianante',next:'pedestrian',tone:'warn'},
+        {label:'Vehículo no autorizado o lento',next:'vehicle',tone:'warn'},
+        {label:'No confirmado',next:'monitor'}
+      ]},
+      pedestrian:{phase:2,type:'action',title:'Peatón en calzada o entorno del túnel',help:'Usa megafonía/radiodifusión y coordina ayuda externa.',actions:['Radiodifusión y megafonía: peatón en calzada.','Avisos: Sala Conjunta de Comandament y Centre de Gestió de la Mobilitat.','Valorar necesidad de escolta/intervención.'],next:'escort'},
+      vehicle:{phase:2,type:'action',title:'Vehículo no autorizado o lento',help:'Avisa y mantiene cierre/precaución hasta salida o escolta.',actions:['Radiodifusión: vehículo lento/no autorizado en carril indicado.','Avisos: Sala Conjunta de Comandament y Centre de Gestió de la Mobilitat.','Registrar identificación del vehículo si es posible.'],next:'escort'},
+      escort:{phase:3,type:'choice',title:'Necesidad de escolta/intervención',help:'El PAU contempla supervisión y posible apoyo para retirada.',question:'¿Requiere escolta o intervención externa?',actions:['Mantener seguimiento CTTV.'],options:[
+        {label:'Sí',next:'escortMeasures',tone:'warn'},
+        {label:'No, supervisar salida',next:'monitor'}
+      ]},
+      escortMeasures:{phase:3,type:'action',title:'Apoyo externo / escolta',help:'Coordina retirada con los servicios oportunos.',actions:['Coordinar con Sala Conjunta / Guàrdia Urbana.','Señalización: vehículo/peatón en túnel.','Radiodifusión: vehículo/peatón en túnel.'],next:'monitor'},
+      monitor:{phase:4,type:'choice',title:'Supervisión de la incidencia',help:'Mantén medidas hasta desaparición del riesgo.',question:'¿Fin del incidente?',actions:['Supervisar por CTTV.','Comprobar salida o retirada.'],options:[
+        {label:'Sí',next:'end',tone:'yes'},
+        {label:'No',next:'monitor',tone:'warn'}
+      ]},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de presencia no autorizada',summary:'Restablece condiciones normales y desactiva alerta.',actions:['Restablecer condiciones normales.','Desactivar PAU en ALERTA.','Cerrar registro.']}
+    }
+  },
+
+  '240-TRA': {
+    code:'240-TRA', category:'TRA', level:'Alerta', title:'Animal grande suelto o peatón errante',
+    keywords:['animal','senglar','jabalí','vianant errant','peatón errante','calzada','ganado'],
+    phases:['Detección','Protección','Clasificación','Retirada','Cierre'],
+    description:'Animal grande suelto, animal que pueda provocar accidente, jabalí de cualquier tamaño, o peatón errante que no responde a indicaciones.',
+    location:'Túnel o entradas.',
+    detection:['DAI.','Observación directa por CTTV o personal.','Aviso por poste SOS.','Llamada exterior o del 112.','Bestiar/ganado o peatón con conducta errática.'],
+    info:['Tipo de incidente.','Localización.','Fecha y hora.','Tipo de presencia.','Medidas adoptadas.','Perspectivas de afección al tráfico.'],
+    nodes:{
+      start:{phase:0,type:'action',title:'Animal grande o peatón errante',help:'La prioridad es proteger la circulación y coordinar retirada.',actions:['CTTV: visualizar cámara más cercana.','Activar PAU en ALERTA.','Aplicar protocolo de cierre de tubo.','Iluminación: subir nivel si procede.'],next:'type'},
+      type:{phase:1,type:'choice',title:'Tipología',help:'Selecciona el tipo para adaptar el mensaje de megafonía/radiodifusión.',question:'¿Qué se observa?',actions:['Registrar ubicación y evolución.'],options:[
+        {label:'Animal grande / jabalí',next:'animal',tone:'warn'},
+        {label:'Peatón errante',next:'pedestrian',tone:'warn'},
+        {label:'No confirmado',next:'warnings'}
+      ]},
+      animal:{phase:2,type:'action',title:'Animal en calzada',help:'Emite aviso y coordina retirada con servicios externos.',actions:['Radiodifusión y megafonía: animales en calzada.','Avisos: Sala Conjunta de Comandament, Centre de Gestió de la Mobilitat, Equipo de Mantenimiento y CECAT-112.'],next:'withdrawal'},
+      pedestrian:{phase:2,type:'action',title:'Peatón errante en calzada',help:'Emite aviso y coordina intervención.',actions:['Radiodifusión y megafonía: peatón en calzada.','Avisos: Sala Conjunta de Comandament, Centre de Gestió de la Mobilitat, Equipo de Mantenimiento y CECAT-112.'],next:'withdrawal'},
+      warnings:{phase:2,type:'action',title:'Avisos preventivos',help:'Si no se confirma tipología, mantén el cierre y coordinación.',actions:['Mantener cierre de tubo.','Avisar a Sala Conjunta, CGM, Equipo de Mantenimiento y CECAT-112.'],next:'withdrawal'},
+      withdrawal:{phase:3,type:'choice',title:'Retirada o control',help:'Supervisa y recoge instrucciones de servicios externos.',question:'¿Animal/peatón retirado o controlado?',actions:['Supervisar la situación.','Recoger indicaciones de los servicios externos para retirada.'],options:[
+        {label:'Sí, retirado/controlado',next:'end',tone:'yes'},
+        {label:'No, continuar seguimiento',next:'withdrawal',tone:'warn'}
+      ]},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de animal/peatón errante',summary:'Restablece condiciones normales y desactiva alerta.',actions:['Restablecer condiciones normales de explotación.','Desactivar PAU en ALERTA.','Cerrar registro.']}
+    }
+  },
+
+  '250-TRA': {
+    code:'250-TRA', category:'TRA', level:'Alerta', title:'Vehículo detenido obstaculizando un carril',
+    keywords:['vehículo detenido','obstaculiza carril','avería','calzada','poste SOS','malestar conductor'],
+    phases:['Detección','Protección','Avisos','Seguimiento','Cierre'],
+    description:'Vehículo detenido en el túnel obstaculizando un carril, no situado en eixamplament.',
+    location:'Túnel o zona de influencia de las bocas.',
+    detection:['DAI.','Observación directa por CTTV o personal.','Llamada de usuario al Centro de Control.','Llamada por poste SOS.','Avería, malestar del conductor o pequeño accidente.'],
+    info:['Tipo de incidente.','Localización.','Fecha y hora.','Número y tipo de vehículos involucrados.','Perspectivas de afección.','Identificación si procede.','Medidas adoptadas.','Duración estimada.'],
+    nodes:{
+      start:{phase:0,type:'action',title:'Vehículo obstaculizando carril',help:'Este protocolo se activa cuando el vehículo no está en apartadero/eixamplament.',actions:['CTTV: visualizar cámara más cercana al incidente.','Activar PAU en ALERTA.','Iluminación: subir nivel si procede.','Aplicar protocolo de cierre de carril.'],next:'measures'},
+      measures:{phase:2,type:'action',title:'Medidas operativas',help:'Protege el carril y avisa a servicios.',actions:['Megafonía/radiodifusión: vehículo obstaculizando un carril.','Avisos: Sala Conjunta de Comandament, Centre de Gestió de la Mobilitat y Equipo de Mantenimiento.','Registrar número/tipo de vehículos y causa probable.'],next:'monitor'},
+      monitor:{phase:3,type:'choice',title:'Supervisión de retirada',help:'Mantén el protocolo hasta que el vehículo se retire.',question:'¿Vehículo retirado?',actions:['Comprobar por CTTV la retirada del vehículo.','Actualizar duración estimada.'],options:[
+        {label:'Sí, retirado',next:'end',tone:'yes'},
+        {label:'No, continúa obstaculizando',next:'monitor',tone:'warn'}
+      ]},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de vehículo obstaculizando carril',summary:'Restablece condiciones normales y desactiva alerta.',actions:['Restablecer condiciones normales de explotación.','Desactivar PAU en ALERTA.','Cerrar registro.']}
+    }
+  },
+
+  '260-AVA': {
+    code:'260-AVA', category:'AVA', level:'Alerta', title:'Funcionamiento degradado de sistemas',
+    keywords:['degradado','CTTV','iluminación','SCADA','ventilación','BIE','detectores','nivel medio'],
+    phases:['Detección','Sistema','Horario/alcance','Medidas','Cierre'],
+    description:'Funcionamiento degradado de sistemas en nivel medio, incluyendo CTTV, alumbrado, SCADA, ventilación, BIEs o detectores ambientales.',
+    location:'Túnel o locales técnicos.',
+    detection:['Supervisión desde Centro de Control.','Alarmas técnicas del sistema de control.','Trabajos de revisión o inspecciones de mantenimiento.','Señal en SCADA.'],
+    info:['Fecha y hora de detección.','Fallo, avería o daño.','Alcance/tramos afectados.','Duración estimada.','Medidas adoptadas.'],
+    nodes:{
+      start:{phase:0,type:'choice',title:'Sistema degradado',help:'Selecciona el sistema afectado para registrar correctamente el incidente.',question:'¿Qué sistema presenta funcionamiento degradado?',actions:['Registrar hora de detección.','Determinar alcance y duración estimada si es posible.'],options:[
+        {label:'CTTV',next:'schedule'},
+        {label:'Alumbrado',next:'schedule'},
+        {label:'Ventilación',next:'schedule'},
+        {label:'SCADA',next:'scada',tone:'warn'},
+        {label:'BIEs',next:'bies',tone:'warn'},
+        {label:'Detectores ambientales',next:'detectors',tone:'warn'}
+      ]},
+      schedule:{phase:1,type:'choice',title:'Horario y alcance',help:'El PAU distingue algunos escenarios por horario de explotación.',question:'¿En qué franja se detecta?',actions:['Registrar sistema afectado, tramo y alcance.'],options:[
+        {label:'06:00-22:00 laborable',next:'mediumMeasures'},
+        {label:'22:00-06:00 / no laborable',next:'mediumMeasuresNight',tone:'warn'},
+        {label:'No indicado',next:'mediumMeasures'}
+      ]},
+      mediumMeasures:{phase:3,type:'action',title:'Medidas por sistema degradado',help:'Aplica el procedimiento de nivel medio y coordina reparación.',actions:['Avisar a Equipo de Mantenimiento de Instalaciones.','Avisar a Guàrdia Urbana si hay afección operativa.','Aplicar vigilancia/medida compensatoria según sistema afectado.','Registrar alcance, tramo afectado y duración estimada.'],next:'monitor'},
+      mediumMeasuresNight:{phase:3,type:'action',title:'Medidas reforzadas por horario sensible',help:'Durante horario nocturno o no laborable, extrema seguimiento y medidas compensatorias.',actions:['Avisar a Equipo de Mantenimiento de Instalaciones.','Valorar vigilancia presencial o medida compensatoria.','Informar a Guàrdia Urbana si hay impacto en seguridad o tráfico.','Registrar alcance y duración estimada.'],next:'monitor'},
+      scada:{phase:2,type:'action',title:'Avería SCADA',help:'Pérdida de control del túnel en SCADA según esquema de sistemas degradados.',actions:['Activar procedimiento degradado de SCADA.','Avisar a mantenimiento.','Registrar pérdida de control, duración estimada y medidas manuales.'],next:'monitor'},
+      bies:{phase:2,type:'action',title:'Avería BIEs',help:'Falta de suministro de agua en red BIEs u otra afección relevante.',actions:['Avisar a mantenimiento.','Registrar alcance de la red BIE afectada.','Valorar restricciones operativas si la cobertura contra incendios queda degradada.'],next:'monitor'},
+      detectors:{phase:2,type:'action',title:'Avería detectores ambientales',help:'Fallo de detectores ambientales del túnel.',actions:['Avisar a mantenimiento.','Registrar detectores/tramos afectados.','Extremar vigilancia alternativa de CO/NOx/opacidad.','Usar lecturas redundantes si existen.'],next:'monitor'},
+      monitor:{phase:4,type:'choice',title:'Seguimiento de reparación',help:'Mantén el protocolo hasta reparación o escalado.',question:'¿Sistema reparado o situación controlada?',actions:['Verificar reparación.','Actualizar duración estimada.'],options:[
+        {label:'Sí, reparado/controlado',next:'end',tone:'yes'},
+        {label:'No, continúa degradado',next:'monitor',tone:'warn'},
+        {label:'Empeora a crítico',next:'route360',tone:'warn'}
+      ]},
+      route360:{phase:4,type:'terminal',status:'Escalado',title:'Derivar a 360-AVA',summary:'La degradación supera el nivel medio o compromete gravemente la seguridad.',actions:['Registrar derivación a 360-AVA.','Mantener medidas compensatorias hasta relevo.','Informar a responsables operativos.']},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de sistema degradado',summary:'Restablece condiciones normales y desactiva alerta.',actions:['Confirmar reparación con mantenimiento.','Restablecer condiciones normales.','Desactivar PAU en ALERTA.','Cerrar registro.']}
+    }
+  },
+
+  '270-TRA': {
+    code:'270-TRA', category:'TRA', level:'Alerta', title:'Accidente sin presencia de vehículos pesados',
+    keywords:['accidente','colisión','atropello','heridos','sin pesados','ocupación calzada'],
+    phases:['Detección','Afección','Medidas','Supervisión','Cierre'],
+    description:'Colisión entre vehículos o contra estructura/instalaciones sin vehículos pesados implicados, con o sin daños personales.',
+    location:'Túnel o accesos.',
+    detection:['DAI.','Observación directa por CTTV o personal.','Aviso por poste SOS.','Llamada exterior o 112.','Colisiones con ocupación parcial o total de calzada, con o sin heridos.'],
+    info:['Tipo de incidente.','Localización.','Fecha y hora.','Tipo de accidente.','Número, tipo e identificación de vehículos.','Víctimas atrapadas.','Gravedad y posición de vehículos.','Riesgo de incendio/explosión.','Afección al tráfico.','Itinerarios de acceso.','Medidas adoptadas.'],
+    nodes:{
+      start:{phase:0,type:'action',title:'Accidente detectado',help:'Confirma por CTTV, activa alerta y prepara medidas de corte.',actions:['CTTV: visualizar cámara más cercana al incidente.','Activar PAU en ALERTA.','Iluminación: subir iluminación si procede.','Registrar número/tipo de vehículos y posibles víctimas.'],next:'affection'},
+      affection:{phase:1,type:'choice',title:'Afección de carriles',help:'El cierre depende de si afecta a dos o más carriles, carril central o un carril lateral.',question:'¿Qué afección produce?',actions:['Comprobar posición de vehículos y accesibilidad de servicios.'],options:[
+        {label:'Dos o más carriles',next:'tubeClosure',tone:'warn'},
+        {label:'Un carril central',next:'tubeClosure',tone:'warn'},
+        {label:'Un carril no central',next:'laneClosure'},
+        {label:'No confirmado',next:'tubeClosure',tone:'warn'}
+      ]},
+      tubeClosure:{phase:2,type:'action',title:'Cierre de tubo',help:'Afección relevante o incierta: priorizar cierre de tubo.',actions:['Aplicar protocolo de cierre de tubo.','Radiodifusión/megafonía: túnel cerrado.','Ventilación: activar manualmente si procede.','Señalización: accidente en túnel.','Avisos: Sala Conjunta de Comandament, Centre de Gestió de la Mobilitat, Equipo de Conservación y CECAT.'],next:'monitor'},
+      laneClosure:{phase:2,type:'action',title:'Cierre de carril',help:'Accidente limitado a un carril no central.',actions:['Aplicar protocolo de cierre de carril.','Ventilación: activar manualmente si procede.','Señalización: accidente en túnel.','Avisos: Sala Conjunta de Comandament, Centre de Gestió de la Mobilitat y Equipo de Conservación.'],next:'monitor'},
+      monitor:{phase:3,type:'choice',title:'Supervisión del accidente',help:'Mantener hasta servicios llegados, heridos evacuados y vehículos retirados.',question:'¿Fin del incidente?',actions:['Supervisar la situación.','Confirmar llegada de servicios externos.','Confirmar evacuación de heridos y retirada de vehículos.'],options:[
+        {label:'Sí, finalizado',next:'end',tone:'yes'},
+        {label:'No, continuar',next:'monitor',tone:'warn'},
+        {label:'Se agrava / pesados / MMPP',next:'escalate',tone:'warn'}
+      ]},
+      escalate:{phase:4,type:'terminal',status:'Escalado',title:'Reclasificar accidente',summary:'La situación requiere protocolo superior o específico.',actions:['Valorar 370-TRA, 371-TRA, 380-TRA o 400-FOC según evolución.','Registrar motivo de reclasificación.','Mantener corte y avisos.']},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de accidente',summary:'Restablece condiciones normales y desactiva alerta.',actions:['Restablecer condiciones normales.','Desactivar PAU en ALERTA.','Cerrar registro.']}
+    }
+  },
+
+  '280-TRA': {
+    code:'280-TRA', category:'TRA', level:'Alerta', title:'Conducción en sentido contrario o temeraria',
+    keywords:['sentido contrario','temeraria','conducción peligrosa','velocidad reducida','contradirección'],
+    phases:['Detección','Clasificación','Medidas','Supervisión','Cierre'],
+    description:'Vehículo circulando en sentido contrario o con comportamiento que presenta grave riesgo para el resto de vehículos.',
+    location:'Túnel o cielo abierto.',
+    detection:['DAI.','Observación directa por CTTV o personal.','Aviso por poste SOS.','Llamada exterior o del 112.','Comportamientos que supongan grave riesgo para la circulación.'],
+    info:['Tipo de incidente.','Localización.','Fecha y hora de detección.','Persona al mando si aplica.','Identificación del vehículo infractor.','Hora de infracción.','Trayecto mediante CTTV.','Medidas adoptadas.'],
+    nodes:{
+      start:{phase:0,type:'action',title:'Conducción peligrosa detectada',help:'Visualiza y clasifica rápidamente la conducta.',actions:['CTTV: visualizar cámaras.','Activar PAU en ALERTA.','Iluminación: subir nivel si procede.','Registrar identificación y trayectoria si es posible.'],next:'type'},
+      type:{phase:1,type:'choice',title:'Tipo de conducta',help:'El PAU diferencia cierre de tubo para contradirección/temeraria frente a cierre de carril para velocidad anormalmente baja.',question:'¿Es sentido contrario o conducción temeraria?',actions:['Mantener seguimiento CTTV.'],options:[
+        {label:'Sí, sentido contrario / temeraria',next:'tubeClosure',tone:'warn'},
+        {label:'No, velocidad anormalmente baja',next:'laneClosure'},
+        {label:'No confirmado',next:'tubeClosure',tone:'warn'}
+      ]},
+      tubeClosure:{phase:2,type:'action',title:'Cierre de tubo por riesgo grave',help:'Riesgo grave para la circulación.',actions:['Aplicar protocolo de cierre de tubo.','Radiodifusión/megafonía: conducción en sentido contrario.','Avisos: Sala Conjunta de Comandament, Centre de Gestió de la Mobilitat y CECAT.'],next:'monitor'},
+      laneClosure:{phase:2,type:'action',title:'Cierre de carril por vehículo muy lento',help:'Tratar como vehículo anormalmente lento si no hay contradirección/temeridad.',actions:['Aplicar protocolo de cierre de carril.','Radiodifusión/megafonía: vehículo circulando a velocidad reducida.','Avisos: Sala Conjunta de Comandament y Centre de Gestió de la Mobilitat.'],next:'monitor'},
+      monitor:{phase:3,type:'choice',title:'Supervisión de la situación',help:'Puede derivar a otro incidente si se produce accidente o bloqueo.',question:'¿Fin del incidente?',actions:['Supervisar situación por CTTV.','Valorar lanzamiento de otro protocolo si aparece accidente u obstáculo.'],options:[
+        {label:'Sí, finalizado',next:'end',tone:'yes'},
+        {label:'No, continuar seguimiento',next:'monitor',tone:'warn'},
+        {label:'Ha provocado accidente',next:'route270',tone:'warn'}
+      ]},
+      route270:{phase:4,type:'terminal',status:'Derivación',title:'Derivar a accidente',summary:'La conducción peligrosa ha generado un accidente u otra afección.',actions:['Abrir/registrar 270-TRA o protocolo superior según gravedad.','Mantener cierre y avisos.'],jump:'270-TRA'},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de conducción peligrosa',summary:'Restablece condiciones normales y desactiva alerta.',actions:['Restablecer condiciones normales.','Desactivar PAU en ALERTA.','Cerrar registro.']}
+    }
+  },
+
+
+  '310-AMB': {
+    code:'310-AMB', category:'AMB', level:'Emergencia', title:'Calamarsa o nevada intensa',
+    keywords:['calamarsa','granizo','nevada','nieve','meteorología','circulación difícil','emergencia'],
+    phases:['Detección','Verificación','Medidas','Coordinación','Cierre'],
+    description:'Fenómenos atmosféricos de elevada intensidad, como calamarsa o nevadas, que suponen una gran dificultad para la circulación.',
+    location:'Exterior del túnel.',
+    detection:['Observación de operadores a través de cámaras.','Observación de personal de mantenimiento.','Llamada de la Sala Conjunta de Guàrdia Urbana.','Aviso CECAT.','Calamarsa intensa o nevada intensa.'],
+    info:['Tipo de incidente.','Localización del tramo afectado.','Fecha y hora de detección.','Medidas adoptadas.'],
+    nodes:{
+      start:{phase:0,type:'choice',title:'Calamarsa o nevada intensa',help:'Confirma si el fenómeno dificulta o imposibilita la circulación en accesos o entorno del túnel.',question:'¿La circulación queda gravemente dificultada o imposibilitada?',actions:['Visualizar cámaras del tramo afectado.','Contrastar aviso con CECAT / Guàrdia Urbana / meteorología.','Registrar tramo y hora de detección.'],options:[
+        {label:'Sí, circulación comprometida',next:'close',tone:'warn'},
+        {label:'No, circulación posible con precaución',next:'route110'},
+        {label:'No confirmado',next:'verify'}
+      ]},
+      verify:{phase:1,type:'choice',title:'Verificación meteorológica',help:'Antes de escalar, confirma el estado real por cámaras y avisos externos.',question:'¿Se confirma fenómeno intenso?',actions:['Comprobar cámaras de accesos.','Consultar información meteorológica disponible.','Mantener vigilancia de evolución.'],options:[
+        {label:'Sí, confirmado',next:'close',tone:'warn'},
+        {label:'No, rebajar a meteorología adversa',next:'route110'}
+      ]},
+      close:{phase:2,type:'action',title:'Medidas de emergencia meteorológica',help:'Prioriza evitar entrada de vehículos en condiciones no seguras.',actions:['Activar PAU en EMERGENCIA.','Aplicar cierre de tubo o túnel según afección real.','Señalización: túnel cerrado / precaución meteorológica.','Avisos: SCC, CGM, CECAT, Guàrdia Urbana y equipo de conservación.','Coordinar retirada de vehículos si hubiera usuarios expuestos.'],next:'monitor'},
+      monitor:{phase:3,type:'choice',title:'Seguimiento de la situación',help:'Mantener hasta recuperación suficiente de condiciones de circulación.',question:'¿Se ha recuperado la circulación segura?',actions:['Supervisar evolución por cámaras.','Confirmar estado de calzada y accesos.','Mantener coordinación con servicios externos.'],options:[
+        {label:'Sí, restablecer',next:'end',tone:'yes'},
+        {label:'No, continuar emergencia',next:'monitor',tone:'warn'}
+      ]},
+      route110:{phase:4,type:'terminal',status:'Rebaja de nivel',title:'Tratar como 110-AMB',summary:'El fenómeno no imposibilita la circulación; se recomienda volver al protocolo de fenómenos meteorológicos adversos.',actions:['Registrar rebaja de nivel.','Mantener señalización preventiva.','Abrir 110-AMB si continúa afección meteorológica.'],jump:'110-AMB'},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de emergencia meteorológica',summary:'Restablecer explotación normal cuando las condiciones lo permitan.',actions:['Restablecer condiciones normales de explotación.','Desactivar PAU en EMERGENCIA.','Cerrar registro.']}
+    }
+  },
+
+  '315-AMB': {
+    code:'315-AMB', category:'AMB', level:'Emergencia', title:'Excesivo nivel de opacidad',
+    keywords:['opacidad','humo','visibilidad','opacímetro','cierre','emergencia'],
+    phases:['Detección','Umbral','Causa','Medidas','Cierre'],
+    description:'Nivel de opacidad en umbral de emergencia/cierre, con visibilidad muy reducida en el interior del túnel.',
+    location:'Interior del túnel.',
+    detection:['Alarma SCADA de detectores de opacidad.','Tráfico denso o retenciones.','Vehículos con alto grado de emisión.','Avería de opacímetro.','Posible humo/incendio.'],
+    thresholds:{type:'opacity'},
+    info:['Tipo de incidente.','Localización.','Fecha y hora de detección.','Verificación de la causa.','Condiciones de tráfico.','Perspectivas de afección.','Medidas adoptadas.'],
+    nodes:{
+      start:{phase:0,type:'opacityInput',minSeverity:3,maxProceedSeverity:3,title:'Valor de opacidad en emergencia',help:'Introduce K. Si no alcanza emergencia, el asistente sugerirá rebajar a 215-AMB.'},
+      belowThreshold:{phase:1,type:'terminal',status:'Rebaja de nivel',title:'Valor por debajo de emergencia',summary:'El valor no corresponde a 315-AMB. Tratar como 215-AMB si sigue por encima de alerta.',actions:['Registrar valor y detector.','Valorar cambio a 215-AMB.','Mantener ventilación y señalización hasta normalización.'],jump:'215-AMB'},
+      levelOk:{phase:1,type:'choice',title:'Opacidad en emergencia',help:'El punto crítico es descartar humo/incendio y cortar circulación si la visibilidad no es segura.',question:'¿Hay indicios de humo, incendio o pérdida súbita de visibilidad?',actions:['Activar PAU en EMERGENCIA.','CTTV: visualizar cámaras.','Registrar valor K y opacímetro asociado.'],options:[
+        {label:'Sí, posible incendio/humo',next:'route400',tone:'warn'},
+        {label:'No, opacidad por tráfico/emisiones',next:'measures'},
+        {label:'No confirmado',next:'measures',tone:'warn'}
+      ]},
+      measures:{phase:2,type:'action',title:'Medidas por opacidad extrema',help:'Aplicar medidas superiores y seguimiento continuo.',actions:['Aplicar cierre de tubo o túnel según afección.','Señalización: túnel cerrado / modere velocidad según estado.','Ventilación: activar o corregir régimen de emergencia.','Avisos: SCC, CGM, CECAT y Equipo de Conservación.','Preparar evacuación si la visibilidad impide condiciones seguras.'],next:'monitor'},
+      monitor:{phase:3,type:'choice',title:'Supervisión de opacidad',help:'Mantener emergencia hasta descenso sostenido y confirmación de seguridad.',question:'¿La opacidad baja de alerta y se recupera visibilidad segura?',actions:['Supervisar tendencia.','Mantener cierre/ventilación hasta normalizar.','Confirmar ausencia de incendio.'],options:[
+        {label:'Sí, rebajar/restablecer',next:'end',tone:'yes'},
+        {label:'No, continúa emergencia',next:'monitor',tone:'warn'},
+        {label:'Aparece incendio',next:'route400',tone:'warn'}
+      ]},
+      route400:{phase:4,type:'terminal',status:'Derivación urgente',title:'Derivar a 400-FOC',summary:'Hay indicios de incendio, explosión o pérdida súbita de visibilidad.',actions:['Abrir/registrar 400-FOC.','Mantener cierre y ventilación según instrucciones de emergencia.','Avisar ayuda externa si procede.'],jump:'400-FOC'},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de opacidad extrema',summary:'Restablecer condiciones normales o rebajar nivel si todavía quedan valores por encima de prealerta.',actions:['Restablecer condiciones normales si procede.','Desactivar PAU en EMERGENCIA o rebajar nivel.','Cerrar registro.']}
+    }
+  },
+
+  '320-AMB': {
+    code:'320-AMB', category:'AMB', level:'Emergencia', title:'Excesiva concentración de CO/NOx',
+    keywords:['CO','NOx','NO','NO2','gases','ventilación','emergencia','cierre'],
+    phases:['Detección','Umbral','Causa','Medidas','Cierre'],
+    description:'Concentración de CO/NOx en umbral de emergencia/cierre. Una alta concentración de CO/NO puede indicar origen de incendio.',
+    location:'Interior del túnel.',
+    detection:['Alarma SCADA de detectores de CO/NOx.','Tráfico denso o retenciones.','Vehículos con alto grado de emisión.','Mal funcionamiento de ventilación o fallo de detector.','Posible origen de incendio.'],
+    thresholds:{type:'gases'},
+    info:['Tipo de incidente.','Localización.','Fecha y hora de detección.','Verificación de la causa.','Condiciones de tráfico.','Perspectivas de afección.','Medidas adoptadas.'],
+    nodes:{
+      start:{phase:0,type:'gasInput',minSeverity:3,maxProceedSeverity:3,title:'Concentración de gases en emergencia',help:'Introduce gas y valor. Si no alcanza emergencia/cierre, se sugerirá rebajar a 220-AMB.'},
+      belowThreshold:{phase:1,type:'terminal',status:'Rebaja de nivel',title:'Valor por debajo de emergencia',summary:'El valor no corresponde a 320-AMB. Tratar como 220-AMB si sigue en alerta.',actions:['Registrar gas, valor y detector.','Valorar cambio a 220-AMB.','Mantener ventilación y seguimiento.'],jump:'220-AMB'},
+      peopleWarning:{phase:1,type:'action',title:'Personas dentro del túnel',help:'Hay personal, peatones o mantenimiento dentro. Priorizar seguridad personal y condiciones de evacuación.',actions:['Extremar vigilancia de CO/NOx.','Comunicar con personal presente si existe.','Preparar evacuación si empeoran valores o ventilación.'],next:'cause'},
+      levelOk:{phase:1,type:'choice',title:'Gases en emergencia',help:'Identifica causa: retenciones, ventilación/detector o posible incendio.',question:'¿Hay indicios de incendio, humo o foco térmico?',actions:['Activar PAU en EMERGENCIA.','CTTV: visualizar cámaras.','Registrar gas, valor y detector asociado.'],options:[
+        {label:'Sí, posible incendio',next:'route400',tone:'warn'},
+        {label:'No, parece retención/emisiones',next:'measures'},
+        {label:'No confirmado',next:'measures',tone:'warn'}
+      ]},
+      cause:{phase:2,type:'choice',title:'Confirmación de causa',help:'Selecciona la causa predominante observada.',question:'¿Cuál parece la causa principal?',actions:['Comprobar estado de ventilación.','Comprobar densidad de tráfico.','Descartar humo/incendio.'],options:[
+        {label:'Retenciones / tráfico denso',next:'measures'},
+        {label:'Ventilación / detector',next:'measures'},
+        {label:'Incendio',next:'route400',tone:'warn'}
+      ]},
+      measures:{phase:3,type:'action',title:'Medidas por gases en emergencia',help:'Aplicar medidas superiores para reducir exposición.',actions:['Aplicar cierre de tubo o túnel según valores y condiciones.','Ventilación: activar/corregir régimen de emergencia.','Señalización: túnel cerrado o modere velocidad según escenario.','Avisos: SCC, CGM, CECAT, Equipo de Conservación y ayuda externa si procede.','Vigilar especialmente presencia de personas en interior.'],next:'monitor'},
+      monitor:{phase:4,type:'choice',title:'Supervisión de gases',help:'Mantener hasta descenso de valores y causa controlada.',question:'¿Valores por debajo de alerta y causa controlada?',actions:['Supervisar tendencia de CO/NOx.','Mantener ventilación.','Confirmar ausencia de incendio.'],options:[
+        {label:'Sí, rebajar/restablecer',next:'end',tone:'yes'},
+        {label:'No, continúa emergencia',next:'monitor',tone:'warn'},
+        {label:'Aparece incendio',next:'route400',tone:'warn'}
+      ]},
+      route400:{phase:4,type:'terminal',status:'Derivación urgente',title:'Derivar a 400-FOC',summary:'Los gases pueden estar asociados a incendio o explosión.',actions:['Abrir/registrar 400-FOC.','Mantener cierre y ventilación de emergencia.','Coordinar ayuda externa.'],jump:'400-FOC'},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de concentración extrema',summary:'Restablecer condiciones normales o rebajar nivel según valores residuales.',actions:['Restablecer condiciones normales si procede.','Desactivar PAU en EMERGENCIA o rebajar nivel.','Cerrar registro.']}
+    }
+  },
+
+  '330-ILI': {
+    code:'330-ILI', category:'ILI', level:'Emergencia', title:'Manifestaciones o desorden público',
+    keywords:['manifestación','desorden público','intrusión','vianants','peatones','corte','vandalismo','retenciones'],
+    phases:['Detección','Clasificación','Medidas','Coordinación','Cierre'],
+    description:'Actuación colectiva, autorizada o no, que perturba la circulación normal de vehículos por el túnel.',
+    location:'Túnel, galerías o locales técnicos.',
+    detection:['Llamada telefónica anunciando el hecho.','Observación directa por explotación, mantenimiento o CTTV.','Aviso por poste SOS.','Llamada exterior o 112.','Intrusión masiva de peatones.','Cortes de circulación con objetos o vehículos.','Circulación en paralelo a velocidad muy lenta generando retenciones.'],
+    info:['Tipo de incidente.','Localización.','Fecha y hora de detección.','Número estimado de personas.','Tipo de acción: corte, robo, vandalismo o circulación lenta.','Condiciones de tráfico e itinerarios de acceso.','Proximidad de elementos vulnerables.','Medidas adoptadas.'],
+    nodes:{
+      start:{phase:0,type:'choice',title:'Desorden público detectado',help:'Clasifica el tipo de acción y evita exponer a usuarios o personal.',question:'¿Qué tipo de acción predomina?',actions:['CTTV: visualizar cámaras.','Registrar número estimado de personas/vehículos.','Activar PAU en EMERGENCIA.'],options:[
+        {label:'Intrusión masiva / personas dentro',next:'people',tone:'warn'},
+        {label:'Corte de circulación',next:'closure',tone:'warn'},
+        {label:'Vandalismo / robo',next:'vandalism'},
+        {label:'Circulación lenta organizada',next:'route140'}
+      ]},
+      people:{phase:1,type:'action',title:'Personas dentro del perímetro',help:'Priorizar seguridad de usuarios, personal y actuantes.',actions:['Aplicar cierre de tubo/túnel si hay riesgo para peatones o tráfico.','Avisos: Guàrdia Urbana/Mossos, SCC, CGM, CECAT y Equipo de Conservación.','Megafonía: instrucciones de abandono de zona si procede.','Mantener CTTV y no enviar personal sin coordinación.'],next:'monitor'},
+      closure:{phase:1,type:'action',title:'Corte de circulación',help:'Si afecta accesos o interior, cortar antes de generar atrapamiento.',actions:['Aplicar cierre de tubo o túnel según ubicación.','Señalización: túnel cerrado / desvíos.','Avisos a cuerpos policiales y servicios de emergencia si procede.','Registrar objetos/vehículos usados en el corte.'],next:'monitor'},
+      vandalism:{phase:2,type:'action',title:'Vandalismo o robo',help:'Mantener seguridad y trazabilidad; no priorizar recuperación material sobre seguridad.',actions:['Mantener CTTV y registrar evidencias observables.','Avisar cuerpos policiales.','Valorar cierre si hay riesgo a circulación o instalaciones.','Informar a mantenimiento/conservación de daños.'],next:'monitor'},
+      monitor:{phase:3,type:'choice',title:'Seguimiento del incidente',help:'Mantener coordinación hasta despeje y condiciones seguras.',question:'¿Zona despejada y circulación segura?',actions:['Supervisar por CTTV.','Coordinar acceso de cuerpos policiales.','Verificar daños y objetos en calzada.'],options:[
+        {label:'Sí, restablecer',next:'end',tone:'yes'},
+        {label:'No, continuar emergencia',next:'monitor',tone:'warn'},
+        {label:'Hay sabotaje/atentado',next:'route390',tone:'warn'}
+      ]},
+      route140:{phase:4,type:'terminal',status:'Derivación',title:'Derivar a 140-TRA',summary:'La acción genera circulación muy lenta o retenciones sin intrusión/corte grave confirmado.',actions:['Abrir/registrar 140-TRA.','Mantener vigilancia CTTV y avisos si persiste riesgo.'],jump:'140-TRA'},
+      route390:{phase:4,type:'terminal',status:'Escalado urgente',title:'Derivar a 390-ILI',summary:'Hay indicios de sabotaje, amenaza o atentado.',actions:['Abrir 390-ILI.','Mantener cierre y coordinación policial.'],jump:'390-ILI'},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de desorden público',summary:'Restablecer explotación normal cuando no haya riesgo residual.',actions:['Retirar señalización/cierres cuando proceda.','Registrar daños, personas y medidas adoptadas.','Desactivar PAU en EMERGENCIA.','Cerrar registro.']}
+    }
+  },
+
+  '360-AVA': {
+    code:'360-AVA', category:'AVA', level:'Emergencia', title:'Avería crítica, daños estructurales o filtraciones graves',
+    keywords:['avería crítica','CTTV','enllumenat','alumbrado','SCADA','ventilación','energía','daños estructurales','filtraciones','inundación'],
+    phases:['Detección','Sistema','Medidas','Seguimiento','Cierre'],
+    description:'Avería crítica de sistemas, daños estructurales o filtraciones/avenidas masivas de agua que pueden comprometer seguridad e infraestructura.',
+    location:'Túnel, locales técnicos o cielo abierto según caso.',
+    detection:['Supervisión desde Centro de Control/SCADA/CTTV.','Alarmas técnicas del sistema de control.','Revisión de operaciones o equipos de mantenimiento/conservación.','Aviso por poste SOS, llamada exterior o 112 en daños/filtraciones.'],
+    info:['Hora de detección.','Fallo, avería o daño.','Alcance/tramos afectados.','Duración estimada si se conoce.','Medidas adoptadas.','Condiciones de seguridad del túnel.','Secciones afectadas o derruidas si aplica.'],
+    nodes:{
+      start:{phase:0,type:'choice',title:'Tipo de avería crítica',help:'Selecciona el sistema o daño principal para aplicar medidas compensatorias.',question:'¿Qué se ha visto afectado?',actions:['Activar PAU en EMERGENCIA.','Registrar alcance y hora de detección.','Avisar a mantenimiento/conservación.'],options:[
+        {label:'CTTV crítico',next:'cttv'},
+        {label:'Alumbrado crítico',next:'lighting'},
+        {label:'SCADA / control túnel',next:'scada'},
+        {label:'Ventilación crítica',next:'ventilation'},
+        {label:'Energía total',next:'energy',tone:'warn'},
+        {label:'Daños estructurales / filtraciones',next:'structure',tone:'warn'}
+      ]},
+      cttv:{phase:1,type:'action',title:'Avería crítica CTTV',help:'Fallo de cámaras seguido sin vigilancia suficiente durante tiempo relevante.',actions:['Establecer vigilancia alternativa si es posible.','Avisar mantenimiento de instalaciones.','Valorar restricciones/cierre si no se garantiza supervisión.','Informar a Guàrdia Urbana si se requiere apoyo.'],next:'monitor'},
+      lighting:{phase:1,type:'action',title:'Avería crítica de alumbrado',help:'Túnel sin alumbrado o tramo amplio sin iluminación.',actions:['Aplicar cierre de tubo/túnel si no hay condiciones seguras.','Señalización de cierre o precaución según estado.','Avisar mantenimiento de instalaciones y vialidad.','Mantener CTTV si disponible.'],next:'monitor'},
+      scada:{phase:1,type:'action',title:'Pérdida de control SCADA',help:'Pérdida de control de túnel en SCADA con falta de vigilancia suficiente.',actions:['Pasar a operación degradada/manual según disponibilidad.','Activar vigilancia alternativa.','Avisar mantenimiento y responsables operativos.','Valorar cierre si no se garantizan condiciones seguras.'],next:'monitor'},
+      ventilation:{phase:1,type:'action',title:'Avería crítica de ventilación',help:'Compromete control de humos/gases y respuesta ante incendio.',actions:['Aplicar medidas compensatorias o cierre según estado.','Supervisar CO/NOx/opacidad.','Avisar mantenimiento de instalaciones.','Preparar actuación de emergencia si aparece humo o incendio.'],next:'monitor'},
+      energy:{phase:1,type:'action',title:'Fallo total de energía',help:'Fallo total del suministro eléctrico en túnel.',actions:['Activar PAU en EMERGENCIA.','Aplicar cierre de túnel/tubo según pérdida de sistemas.','Avisar mantenimiento, Guàrdia Urbana y responsables operativos.','Comprobar sistemas de respaldo si existen.'],next:'monitor'},
+      structure:{phase:1,type:'choice',title:'Daños estructurales o filtraciones graves',help:'Riesgo inminente para personas e infraestructura.',question:'¿Hay riesgo inmediato para usuarios o estabilidad?',actions:['Visualizar cámaras si es seguro.','Registrar grietas, desprendimientos, deformaciones, derrumbes o grandes entradas de agua.','Avisar Bombers/servicios municipales si procede.'],options:[
+        {label:'Sí, riesgo inmediato',next:'fullClosure',tone:'warn'},
+        {label:'No confirmado',next:'fullClosure',tone:'warn'},
+        {label:'Daño controlado pero grave',next:'monitor'}
+      ]},
+      fullClosure:{phase:2,type:'action',title:'Cierre por riesgo estructural/filtración',help:'Evitar exposición y facilitar acceso de equipos externos.',actions:['Aplicar cierre de túnel en ambos sentidos o tubo afectado.','Avisos: Bombers, Guàrdia Urbana, servicios municipales, SCC, CGM y CECAT.','Preparar evacuación si hay usuarios dentro.','Identificar rutas de acceso seguras para equipos externos.'],next:'monitor'},
+      monitor:{phase:3,type:'choice',title:'Seguimiento de avería crítica',help:'Mantener hasta reparación, estabilización o relevo por equipos externos.',question:'¿Situación estabilizada y explotación segura?',actions:['Actualizar alcance y duración estimada.','Verificar reparación/medidas compensatorias.','Mantener restricciones hasta validación.'],options:[
+        {label:'Sí, restablecer/rebajar',next:'end',tone:'yes'},
+        {label:'No, continúa emergencia',next:'monitor',tone:'warn'},
+        {label:'Aparece incendio/explosión',next:'route400',tone:'warn'}
+      ]},
+      route400:{phase:4,type:'terminal',status:'Derivación urgente',title:'Derivar a 400-FOC',summary:'La avería deriva en incendio/explosión o humo.',actions:['Abrir 400-FOC.','Mantener cierres y avisos.'],jump:'400-FOC'},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de avería crítica',summary:'Restablecer o rebajar nivel cuando la seguridad quede garantizada.',actions:['Confirmar reparación o estabilización.','Restablecer condiciones normales o abrir protocolo de nivel inferior si procede.','Desactivar PAU en EMERGENCIA.','Cerrar registro.']}
+    }
+  },
+
+  '370-TRA': {
+    code:'370-TRA', category:'TRA', level:'Emergencia', title:'Accidente con presencia de vehículos pesados',
+    keywords:['accidente','vehículo pesado','camión','bus','autobús','heridos','carga de fuego'],
+    phases:['Detección','Evaluación','Corte','Coordinación','Cierre'],
+    description:'Accidente en el que se han visto involucrados uno o varios vehículos, al menos uno de ellos pesado.',
+    location:'Túnel o cielo abierto.',
+    detection:['Sistema DAI.','Observación directa por explotación/mantenimiento/CTTV.','Aviso por poste SOS.','Llamada exterior o 112.','Colisiones o atropellos con vehículos pesados.','Autobuses con gran número de personas implicadas.'],
+    info:['Tipo de incidente.','Localización.','Fecha y hora.','Tipo de accidente.','Número/tipo/identificación de vehículos.','Número de heridos y muertos.','Posición de vehículos y daños.','Riesgo de incendio o explosión.','Grado de afección al tráfico.','Elementos vulnerables próximos.','Itinerarios de acceso y medidas adoptadas.'],
+    nodes:{
+      start:{phase:0,type:'action',title:'Accidente con vehículo pesado',help:'Accidente de alto potencial por masa, carga o número de personas.',actions:['CTTV: visualizar cámara más cercana.','Activar PAU en EMERGENCIA.','Registrar vehículos, posición, carga aparente y posibles heridos.','Subir iluminación si procede.'],next:'risk'},
+      risk:{phase:1,type:'choice',title:'Riesgo asociado',help:'Determina si además requiere protocolo de incendio, MMPP o accidente grave.',question:'¿Hay fuego, MMPP, múltiples heridos graves o víctimas?',actions:['Comprobar riesgo de incendio/explosión.','Comprobar si hay placa ADR/MMPP.','Comprobar número de heridos/atrapados.'],options:[
+        {label:'Fuego / humo / explosión',next:'route400',tone:'warn'},
+        {label:'MMPP implicadas',next:'route380',tone:'warn'},
+        {label:'Varios heridos graves/víctimas',next:'route371',tone:'warn'},
+        {label:'No consta',next:'closure'}
+      ]},
+      closure:{phase:2,type:'action',title:'Cierre y avisos',help:'Priorizar corte seguro y acceso de ayuda externa.',actions:['Aplicar cierre de tubo o túnel según afección.','Señalización: accidente / túnel cerrado.','Avisos: Bombers, Guàrdia Urbana, Sanitaris, SCC, CGM, CECAT y Equipo de Conservación.','Facilitar itinerarios de acceso para servicios externos.'],next:'monitor'},
+      monitor:{phase:3,type:'choice',title:'Supervisión del accidente',help:'Mantener hasta rescate, retirada y normalización.',question:'¿Incidente resuelto y vía segura?',actions:['Supervisar llegada de servicios.','Confirmar evacuación de heridos y retirada de vehículos.','Registrar medidas y tiempos.'],options:[
+        {label:'Sí, finalizar',next:'end',tone:'yes'},
+        {label:'No, continuar emergencia',next:'monitor',tone:'warn'},
+        {label:'Se agrava',next:'risk',tone:'warn'}
+      ]},
+      route400:{phase:4,type:'terminal',status:'Derivación urgente',title:'Derivar a 400-FOC',summary:'Accidente con fuego, humo o explosión.',actions:['Abrir 400-FOC.','Mantener cierre y avisos externos.'],jump:'400-FOC'},
+      route380:{phase:4,type:'terminal',status:'Derivación urgente',title:'Derivar a 380-TRA',summary:'Accidente con mercancías peligrosas.',actions:['Abrir 380-TRA.','Registrar placa ONU/ADR si se ve.','Mantener zona aislada.'],jump:'380-TRA'},
+      route371:{phase:4,type:'terminal',status:'Escalado',title:'Derivar a 371-TRA',summary:'Accidente múltiple o con varios heridos graves/víctimas.',actions:['Abrir 371-TRA.','Mantener coordinación sanitaria y de rescate.'],jump:'371-TRA'},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de accidente con pesado',summary:'Restablecer explotación cuando servicios confirmen vía segura.',actions:['Restablecer condiciones normales.','Desactivar PAU en EMERGENCIA.','Cerrar registro.']}
+    }
+  },
+
+  '371-TRA': {
+    code:'371-TRA', category:'TRA', level:'Emergencia', title:'Accidente grave, múltiple o con varios heridos graves/víctimas',
+    keywords:['accidente grave','accidente múltiple','víctimas','heridos graves','atrapados','rescate'],
+    phases:['Detección','Gravedad','Cierre','Coordinación','Cierre'],
+    description:'Accidente grave con diversos heridos graves y/o víctimas, o accidente múltiple con varios vehículos.',
+    location:'Túnel o cielo abierto.',
+    detection:['Sistema DAI.','Observación directa por explotación/mantenimiento/CTTV.','Aviso por poste SOS.','Llamada exterior o 112.','Colisiones con varios vehículos.','Diversos heridos graves y/o víctimas.'],
+    info:['Tipo de incidente.','Localización.','Fecha y hora.','Tipo de accidente.','Número y tipo de vehículos implicados.','Descripción y posición de vehículos.','Riesgo de incendio o explosión.','Grado de afección al tráfico.','Itinerarios de acceso.','Equipos movilizados y medidas adoptadas.'],
+    nodes:{
+      start:{phase:0,type:'action',title:'Accidente grave detectado',help:'Actúa como emergencia mayor desde el primer momento.',actions:['CTTV: visualizar cámara más cercana.','Activar PAU en EMERGENCIA.','Aplicar cierre de tubo/túnel según escenario.','Registrar número estimado de vehículos, heridos, atrapados y víctimas.'],next:'hazards'},
+      hazards:{phase:1,type:'choice',title:'Riesgos añadidos',help:'Identifica peligros que cambian la intervención.',question:'¿Hay fuego, MMPP, atrapados o riesgo estructural?',actions:['Comprobar humo/fuego.','Comprobar placas ADR/MMPP.','Comprobar atrapados y accesos.'],options:[
+        {label:'Fuego / explosión',next:'route400',tone:'warn'},
+        {label:'MMPP',next:'route380',tone:'warn'},
+        {label:'Atrapados / múltiples heridos',next:'rescue',tone:'warn'},
+        {label:'Daño estructural',next:'route360',tone:'warn'},
+        {label:'No confirmado',next:'rescue'}
+      ]},
+      rescue:{phase:2,type:'action',title:'Coordinación de rescate',help:'Facilitar acceso y seguridad de los equipos de emergencia.',actions:['Avisos: 112, Bombers, Sanitaris, Guàrdia Urbana/Mossos, SCC, CGM, CECAT y Equipo de Conservación.','Facilitar itinerarios de acceso y punto de recepción.','Megafonía/radiodifusión según disponibilidad.','Preparar evacuación del túnel si hay usuarios retenidos.'],next:'monitor'},
+      monitor:{phase:3,type:'choice',title:'Seguimiento de emergencia',help:'Mantener hasta control por servicios externos y vía segura.',question:'¿Rescate finalizado y vía segura?',actions:['Supervisar operación de rescate.','Actualizar información de heridos/víctimas.','Mantener cierre y control de accesos.'],options:[
+        {label:'Sí, finalizar',next:'end',tone:'yes'},
+        {label:'No, continúa emergencia',next:'monitor',tone:'warn'}
+      ]},
+      route400:{phase:4,type:'terminal',status:'Derivación urgente',title:'Derivar a 400-FOC',summary:'Existe incendio, explosión o humo.',actions:['Abrir 400-FOC.','Mantener cierre y avisos.'],jump:'400-FOC'},
+      route380:{phase:4,type:'terminal',status:'Derivación urgente',title:'Derivar a 380-TRA',summary:'Hay MMPP implicadas.',actions:['Abrir 380-TRA.','Registrar placa ADR/ONU si es seguro.'],jump:'380-TRA'},
+      route360:{phase:4,type:'terminal',status:'Derivación',title:'Derivar a 360-AVA',summary:'Hay daños estructurales o filtraciones graves.',actions:['Abrir 360-AVA.','Mantener cierre total hasta valoración.'],jump:'360-AVA'},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de accidente grave',summary:'Restablecer solo tras confirmación de seguridad.',actions:['Confirmar retirada de vehículos y limpieza de calzada.','Restablecer condiciones normales.','Desactivar PAU en EMERGENCIA.','Cerrar registro.']}
+    }
+  },
+
+  '380-TRA': {
+    code:'380-TRA', category:'TRA', level:'Emergencia', title:'Accidente con implicación de sustancias peligrosas',
+    keywords:['MMPP','ADR','ONU','mercancías peligrosas','fuga','vertido','cisterna','explosión'],
+    phases:['Detección','Clasificación','Aislamiento','Coordinación','Cierre'],
+    description:'Accidente con uno o varios vehículos de transporte de mercancías peligrosas, con o sin carga.',
+    location:'Túnel o cielo abierto.',
+    detection:['Sistema DAI.','Observación directa por explotación/mantenimiento/CTTV.','Aviso por poste SOS.','Llamada exterior o 112.','Averías, colisiones o atropellos con vehículos MMPP.'],
+    info:['Tipo de incidente.','Localización.','Fecha y hora.','Tipo de accidente.','Clasificación de gravedad tipo 1 a 5.','Número/tipo/identificación de vehículos.','Identificación ONU/ADR si es posible.','Descripción y posición de vehículos.','Riesgo de incendio o explosión.','Grado de afección al tráfico.','Itinerarios de acceso y medidas adoptadas.'],
+    nodes:{
+      start:{phase:0,type:'note',title:'Datos MMPP iniciales',help:'Registra datos visibles sin acercamiento innecesario.',fields:[
+        {id:'adrPlate',label:'Placa ADR / número ONU',placeholder:'Ej. 33/1203, no visible...'},
+        {id:'mmppType',label:'Tipo de producto / peligro',placeholder:'Inflamable, tóxico, corrosivo, desconocido...'},
+        {id:'vehiclePosition',label:'Posición del vehículo',placeholder:'Volcado, detenido, carril afectado...'}
+      ],actions:['Activar PAU en EMERGENCIA.','CTTV: visualizar desde distancia segura.','Aplicar cierre de tubo/túnel.'],next:'type'},
+      type:{phase:1,type:'choice',title:'Clasificación de gravedad MMPP',help:'El PAU distingue tipos 1 a 5 según estado del continente, vertido, fuego o explosión.',question:'¿Qué tipo se aproxima más?',actions:['No enviar personal sin coordinación especializada.','Mantener aislamiento de zona.'],options:[
+        {label:'Tipo 1: avería/accidente sin daños en continente',next:'isolate'},
+        {label:'Tipo 2: daños/volcado sin vertido',next:'isolate',tone:'warn'},
+        {label:'Tipo 3: fuga o vertido',next:'leak',tone:'warn'},
+        {label:'Tipo 4: fuego/fugas con llamas',next:'route400',tone:'warn'},
+        {label:'Tipo 5: explosión',next:'route400',tone:'warn'}
+      ]},
+      isolate:{phase:2,type:'action',title:'Aislamiento preventivo',help:'Mantener zona segura y coordinar especialistas.',actions:['Mantener cierre de tubo/túnel y control de accesos.','Avisos: Bombers, Guàrdia Urbana/Mossos, Sanitaris, SCC, CGM, CECAT y Equipo de Conservación.','Facilitar datos ADR/ONU si están disponibles.','Preparar evacuación/confinamiento según instrucciones de servicios externos.'],next:'monitor'},
+      leak:{phase:2,type:'action',title:'Fuga o vertido MMPP',help:'Tratar como situación especializada de alto riesgo.',actions:['Mantener aislamiento amplio y cierre.','Evitar igniciones y circulación próxima.','Avisar urgentemente Bombers y 112/CECAT.','Registrar dirección de posible escorrentía, humo o nube si se observa.'],next:'monitor'},
+      monitor:{phase:3,type:'choice',title:'Seguimiento MMPP',help:'Mantener hasta control por servicios especializados.',question:'¿Servicios externos declaran situación controlada?',actions:['Actualizar información de producto, vertido y víctimas.','Mantener cierre y accesos despejados.'],options:[
+        {label:'Sí, controlada',next:'end',tone:'yes'},
+        {label:'No, continúa emergencia',next:'monitor',tone:'warn'},
+        {label:'Aparece fuego/explosión',next:'route400',tone:'warn'}
+      ]},
+      route400:{phase:4,type:'terminal',status:'Derivación urgente',title:'Derivar a 400-FOC',summary:'Tipo 4/5 o presencia de fuego/explosión.',actions:['Abrir 400-FOC.','Mantener protocolo MMPP como información crítica complementaria.','Coordinar Bombers/112.'],jump:'400-FOC'},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de accidente MMPP',summary:'Restablecer solo tras autorización/confirmación de seguridad.',actions:['Confirmar descontaminación/limpieza si procede.','Restablecer condiciones normales.','Desactivar PAU en EMERGENCIA.','Cerrar registro.']}
+    }
+  },
+
+  '390-ILI': {
+    code:'390-ILI', category:'ILI', level:'Emergencia', title:'Sabotaje o atentado',
+    keywords:['sabotaje','atentado','artefacto','explosivo','amenaza','vandalismo','terrorismo'],
+    phases:['Detección','Amenaza','Corte','Coordinación','Cierre'],
+    description:'Ocurrencia de un acto de sabotaje o atentado en el túnel.',
+    location:'Túnel, galerías o locales técnicos.',
+    detection:['Llamada telefónica anunciando colocación de artefacto explosivo.','Observación directa por explotación/mantenimiento/CTTV.','Aviso por poste SOS.','Llamada exterior o 112.','Sabotaje de instalaciones o infraestructuras.','Explosión de artefacto explosivo.'],
+    info:['Tipo de incidente.','Localización.','Fecha y hora.','Tipo de atentado: explosivo, robo, vandalismo u otro.','Seguridad de la dotación actuante e integridad estructural.','Condiciones de tráfico e itinerarios de acceso.','Medidas adoptadas.'],
+    nodes:{
+      start:{phase:0,type:'choice',title:'Sabotaje o atentado',help:'Trata la amenaza como real hasta que los cuerpos competentes indiquen lo contrario.',question:'¿Qué situación se comunica u observa?',actions:['Activar PAU en EMERGENCIA.','CTTV: visualizar sin comprometer seguridad.','Registrar llamada/aviso y hora exacta.'],options:[
+        {label:'Amenaza de artefacto',next:'threat',tone:'warn'},
+        {label:'Explosión / daños',next:'explosion',tone:'warn'},
+        {label:'Sabotaje de instalaciones',next:'sabotage',tone:'warn'},
+        {label:'Vandalismo sin amenaza mayor',next:'vandalism'}
+      ]},
+      threat:{phase:1,type:'action',title:'Amenaza de artefacto',help:'Priorizar aislamiento y coordinación policial.',actions:['Aplicar cierre de túnel/tubo según instrucciones y riesgo.','Avisos urgentes: Mossos/Guàrdia Urbana, 112, Bombers, SCC, CGM y CECAT.','No manipular objetos sospechosos.','Preparar evacuación si procede.'],next:'monitor'},
+      explosion:{phase:1,type:'action',title:'Explosión o daños por atentado',help:'Puede requerir incendio, estructura y rescate.',actions:['Aplicar cierre total del ámbito afectado.','Avisos: 112, Bombers, cuerpos policiales, Sanitaris, SCC, CGM y CECAT.','Valorar daños estructurales y víctimas.','Preparar evacuación/rescate.'],next:'secondary'},
+      sabotage:{phase:1,type:'action',title:'Sabotaje de instalaciones',help:'Aislar si compromete seguridad operativa.',actions:['Identificar sistema afectado: energía, CTTV, SCADA, ventilación, extinción.','Avisar mantenimiento y cuerpos policiales.','Valorar derivación a 360-AVA si el daño es crítico.','Mantener seguimiento CTTV si disponible.'],next:'secondary'},
+      vandalism:{phase:1,type:'action',title:'Vandalismo sin amenaza mayor',help:'Mantener seguridad y trazabilidad.',actions:['Registrar evidencias observables.','Avisar cuerpos policiales.','Valorar cierre si afecta a circulación o equipos de seguridad.'],next:'monitor'},
+      secondary:{phase:2,type:'choice',title:'Protocolos secundarios',help:'Selecciona si aparece riesgo dominante.',question:'¿Qué riesgo secundario predomina?',actions:['Comprobar incendio, estructura y víctimas.'],options:[
+        {label:'Incendio / explosión',next:'route400',tone:'warn'},
+        {label:'Daño estructural crítico',next:'route360',tone:'warn'},
+        {label:'Accidente grave / víctimas',next:'route371',tone:'warn'},
+        {label:'Sin derivación adicional',next:'monitor'}
+      ]},
+      monitor:{phase:3,type:'choice',title:'Seguimiento policial / emergencia',help:'No restablecer hasta autorización competente.',question:'¿Autoridad competente permite restablecer?',actions:['Mantener cierre y control de accesos.','Conservar registro de avisos y medidas.','Coordinar equipos externos.'],options:[
+        {label:'Sí, restablecer',next:'end',tone:'yes'},
+        {label:'No, continuar emergencia',next:'monitor',tone:'warn'}
+      ]},
+      route400:{phase:4,type:'terminal',status:'Derivación urgente',title:'Derivar a 400-FOC',summary:'Hay incendio, explosión o pérdida súbita de visibilidad.',actions:['Abrir 400-FOC.','Mantener coordinación policial.'],jump:'400-FOC'},
+      route360:{phase:4,type:'terminal',status:'Derivación',title:'Derivar a 360-AVA',summary:'Hay daño estructural o avería crítica.',actions:['Abrir 360-AVA.','Mantener cierre.'],jump:'360-AVA'},
+      route371:{phase:4,type:'terminal',status:'Derivación',title:'Derivar a 371-TRA',summary:'Hay accidente grave, múltiples heridos o víctimas.',actions:['Abrir 371-TRA.','Coordinar rescate/sanitarios.'],jump:'371-TRA'},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de sabotaje/atentado',summary:'Restablecer solo tras confirmación de seguridad.',actions:['Restablecer condiciones normales si autoridad lo permite.','Registrar daños y medidas adoptadas.','Desactivar PAU en EMERGENCIA.','Cerrar registro.']}
+    }
+  },
+
+  '400-FOC': {
+    code:'400-FOC', category:'FOC', level:'Emergencia', title:'Incendio, explosión o pérdida súbita de visibilidad',
+    keywords:['incendio','fuego','explosión','humo','pérdida súbita de visibilidad','fibrolaser','extintor','vehículo eléctrico'],
+    phases:['Detección','Localización','Cierre','Evacuación','Cierre'],
+    description:'Fuegos o explosiones declarados en instalaciones situadas en cualquier punto del túnel, controlables o no con medios propios, excluyendo atentados o MMPP como causa principal.',
+    location:'Túnel, galerías o instalaciones.',
+    detection:['Sistema DAI.','Observación directa por explotación/mantenimiento/CTTV.','Aviso por poste SOS.','Llamada exterior o 112.','Detectores lineales/fibrolaser o detectores en locales técnicos.','Pulsadores de incendio en locales técnicos.','Señales de retirada de extintor.'],
+    info:['Tipo de incidente.','Localización.','Fecha y hora de detección.','Modo de detección.','Instalación/foco y zonas afectadas.','Secciones afectadas.','Condiciones de tráfico e itinerarios de acceso.','Posible causa y consecuencias.','Condiciones de seguridad del túnel.','Peligros potenciales: propagación, explosión, integridad estructural.','Personas atrapadas y ubicación.','Salidas de emergencia.','Medidas adoptadas: evacuación, extinción, cierre del viario.'],
+    nodes:{
+      start:{phase:0,type:'choice',title:'Incendio o explosión detectado',help:'Determina localización y gravedad inicial para activar corte y evacuación.',question:'¿Dónde se localiza el foco principal?',actions:['Activar PAU en EMERGENCIA.','CTTV: visualizar cámara más cercana si la visibilidad lo permite.','Registrar modo de detección y hora.'],options:[
+        {label:'Vehículo dentro del túnel',next:'vehicle',tone:'warn'},
+        {label:'Local técnico / instalación',next:'technical',tone:'warn'},
+        {label:'Galería / evacuación',next:'gallery',tone:'warn'},
+        {label:'Explosión / pérdida súbita de visibilidad',next:'explosion',tone:'warn'}
+      ]},
+      vehicle:{phase:1,type:'choice',title:'Incendio de vehículo',help:'Valora personas atrapadas, MMPP y posible vehículo eléctrico.',question:'¿Hay personas atrapadas o MMPP implicadas?',actions:['Aplicar cierre de tubo/túnel.','Señalización: túnel cerrado / incendio.','Ventilación: activar régimen de emergencia según procedimiento.'],options:[
+        {label:'Personas atrapadas/heridas',next:'rescue',tone:'warn'},
+        {label:'MMPP / ADR',next:'route380',tone:'warn'},
+        {label:'Vehículo eléctrico',next:'electricVehicle',tone:'warn'},
+        {label:'No consta',next:'evacuation'}
+      ]},
+      technical:{phase:1,type:'action',title:'Incendio en local técnico o instalación',help:'Aislar instalación y coordinar ayuda externa.',actions:['Aplicar cierre según afección al túnel.','Avisos: Bombers, 112, SCC, CGM, CECAT y Equipo de Conservación.','Identificar instalación afectada: transformador, local técnico u otra.','Valorar corte de suministros si procede por responsable técnico.'],next:'evacuation'},
+      gallery:{phase:1,type:'action',title:'Incendio en galería o vía de evacuación',help:'Priorizar vías de evacuación alternativas.',actions:['Identificar salidas de emergencia disponibles/no disponibles.','Avisos: Bombers, 112, SCC, CGM y CECAT.','Megafonía: instrucciones de evacuación si procede.','Mantener CTTV de usuarios y accesos.'],next:'evacuation'},
+      explosion:{phase:1,type:'choice',title:'Explosión o pérdida súbita de visibilidad',help:'Puede implicar daño estructural, accidente grave o sabotaje.',question:'¿Se aprecia daño estructural, víctimas o indicios de atentado?',actions:['Aplicar cierre total del ámbito afectado.','Avisar ayuda externa de forma inmediata.','Valorar estabilidad e integridad de la infraestructura.'],options:[
+        {label:'Daño estructural',next:'route360',tone:'warn'},
+        {label:'Víctimas/accidente múltiple',next:'route371',tone:'warn'},
+        {label:'Indicios de atentado',next:'route390',tone:'warn'},
+        {label:'No confirmado',next:'evacuation',tone:'warn'}
+      ]},
+      electricVehicle:{phase:2,type:'action',title:'Vehículo eléctrico incendiado',help:'El PAU contempla actuaciones específicas para vehículos electrificados: cuarentena o extinción por inundación según medios/procedimiento.',actions:['Avisar Bombers y comunicar posible vehículo electrificado.','Mantener cierre y ventilación de emergencia.','No considerar extinguido definitivamente sin control especializado.','Registrar necesidad de zona de cuarentena o actuación específica posterior.'],next:'evacuation'},
+      rescue:{phase:2,type:'action',title:'Personas atrapadas o heridas',help:'Coordinar rescate y evacuación.',actions:['Avisos: Bombers, Sanitaris, Guàrdia Urbana/Mossos, 112, SCC, CGM y CECAT.','Megafonía/radiodifusión: instrucciones de evacuación/apagar motores si procede.','Facilitar itinerarios de acceso y punto de recepción.','Mantener seguimiento CTTV de usuarios.'],next:'monitor'},
+      evacuation:{phase:3,type:'choice',title:'Evacuación y control de usuarios',help:'Decide si se requiere evacuar o mantener confinamiento/espera según instrucciones y condiciones.',question:'¿Hay usuarios dentro o vehículos retenidos aguas arriba?',actions:['Comprobar cámaras y postes SOS.','Identificar salidas de emergencia útiles.','Mantener cierre de accesos.'],options:[
+        {label:'Sí, usuarios dentro',next:'evacuationActions',tone:'warn'},
+        {label:'No consta',next:'monitor'},
+        {label:'No, túnel despejado',next:'monitor'}
+      ]},
+      evacuationActions:{phase:3,type:'action',title:'Acciones de evacuación',help:'Ayuda a dirigir usuarios sin saturar al operador.',actions:['Activar/emitir megafonía de evacuación si procede.','Indicar salidas de emergencia seguras.','Mantener ventilación de emergencia.','Coordinar recepción de equipos externos en boca del tubo afectado.','Registrar número aproximado de personas y ubicación.'],next:'monitor'},
+      monitor:{phase:4,type:'choice',title:'Seguimiento de incendio/explosión',help:'Mantener hasta extinción, rescate y ventilación segura.',question:'¿Bombers/servicios externos confirman situación controlada y condiciones seguras?',actions:['Supervisar propagación, humo y temperatura.','Actualizar información de atrapados y salidas.','Mantener cierre hasta autorización.'],options:[
+        {label:'Sí, controlada',next:'end',tone:'yes'},
+        {label:'No, continúa emergencia',next:'monitor',tone:'warn'},
+        {label:'Aparece MMPP',next:'route380',tone:'warn'}
+      ]},
+      route360:{phase:4,type:'terminal',status:'Derivación',title:'Derivar a 360-AVA',summary:'Existe daño estructural o filtración/avería crítica asociada.',actions:['Abrir 360-AVA.','Mantener cierre y coordinación con Bombers.'],jump:'360-AVA'},
+      route371:{phase:4,type:'terminal',status:'Derivación',title:'Derivar a 371-TRA',summary:'Hay accidente grave, múltiples heridos o víctimas.',actions:['Abrir 371-TRA.','Mantener rescate y asistencia sanitaria.'],jump:'371-TRA'},
+      route380:{phase:4,type:'terminal',status:'Derivación urgente',title:'Derivar a 380-TRA',summary:'Hay mercancías peligrosas implicadas.',actions:['Abrir 380-TRA.','Comunicar placa ADR/ONU si está disponible.','Mantener aislamiento.'],jump:'380-TRA'},
+      route390:{phase:4,type:'terminal',status:'Derivación urgente',title:'Derivar a 390-ILI',summary:'Posible atentado o sabotaje.',actions:['Abrir 390-ILI.','Mantener coordinación policial.'],jump:'390-ILI'},
+      end:{phase:4,type:'terminal',status:'Fin',title:'Fin de incendio/explosión',summary:'Restablecer solo tras confirmación de seguridad, ventilación y retirada de obstáculos.',actions:['Confirmar extinción, ventilación segura y ausencia de personas atrapadas.','Confirmar integridad de instalaciones/estructura.','Restablecer condiciones normales si procede.','Desactivar PAU en EMERGENCIA.','Cerrar registro.']}
+    }
+  }
+
+};
+
+const state = {
+  tunnelId: 'glories',
+  category: 'TRA',
+  protocolCode: null,
+  nodeId: null,
+  history: [],
+  checklist: [],
+  notes: {},
+  sessionStartedAt: null,
+  lastThresholdResult: null
+};
+
+const el = {
+  tunnelSelect: document.getElementById('tunnelSelect'),
+  directionSelect: document.getElementById('directionSelect'),
+  tubeSelect: document.getElementById('tubeSelect'),
+  incidentLocation: document.getElementById('incidentLocation'),
+  incidentNotes: document.getElementById('incidentNotes'),
+  categoryGrid: document.getElementById('categoryGrid'),
+  protocolList: document.getElementById('protocolList'),
+  protocolSearch: document.getElementById('protocolSearch'),
+  protocolCounter: document.getElementById('protocolCounter'),
+  stage: document.getElementById('stage'),
+  progressSteps: document.getElementById('progressSteps'),
+  progressTitle: document.getElementById('progressTitle'),
+  progressText: document.getElementById('progressText'),
+  topStatus: document.getElementById('topStatus'),
+  sessionSummary: document.getElementById('sessionSummary'),
+  btnChecklist: document.getElementById('btnChecklist'),
+  btnHistory: document.getElementById('btnHistory'),
+  btnTechnical: document.getElementById('btnTechnical'),
+  btnExport: document.getElementById('btnExport'),
+  btnReset: document.getElementById('btnReset'),
+  drawer: document.getElementById('drawer'),
+  drawerBackdrop: document.getElementById('drawerBackdrop'),
+  drawerTitle: document.getElementById('drawerTitle'),
+  drawerContent: document.getElementById('drawerContent'),
+  drawerClose: document.getElementById('drawerClose'),
+  drawerOk: document.getElementById('drawerOk'),
+  drawerExport: document.getElementById('drawerExport'),
+  btnTheme: document.getElementById('btnTheme')
+};
+
+
+function applyTheme(theme) {
+  const next = theme === 'light' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem('pauTheme', next);
+  if (el.btnTheme) el.btnTheme.textContent = next === 'dark' ? '☀️ Día' : '🌙 Noche';
+}
+
+function toggleTheme() {
+  const current = document.documentElement.dataset.theme || 'dark';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+function init() {
+  applyTheme(localStorage.getItem('pauTheme') || 'dark');
+  renderTunnelSelect();
+  renderCategories();
+  renderProtocolList();
+  renderProgress();
+  renderHome();
+  bindEvents();
+  updateStatus();
+}
+
+function bindEvents() {
+  el.tunnelSelect.addEventListener('change', () => {
+    const selected = TUNNELS[el.tunnelSelect.value];
+    if (selected.disabled) {
+      alert('Esta entrada es una plantilla para añadir túneles más adelante. De momento el asistente operativo está centrado en Glòries.');
+      el.tunnelSelect.value = state.tunnelId;
+      return;
+    }
+    state.tunnelId = el.tunnelSelect.value;
+    renderTunnelContext();
+    renderProtocolList();
+    updateStatus();
+    logEvent('Túnel seleccionado: ' + selected.name);
+  });
+  el.protocolSearch.addEventListener('input', renderProtocolList);
+  el.btnTheme.addEventListener('click', toggleTheme);
+  el.btnHistory.addEventListener('click', () => openDrawer('history'));
+  el.btnChecklist.addEventListener('click', () => openDrawer('checklist'));
+  el.btnTechnical.addEventListener('click', () => openDrawer('technical'));
+  el.btnExport.addEventListener('click', exportReport);
+  el.drawerExport.addEventListener('click', exportReport);
+  el.btnReset.addEventListener('click', resetSession);
+  el.drawerClose.addEventListener('click', closeDrawer);
+  el.drawerOk.addEventListener('click', closeDrawer);
+  el.drawerBackdrop.addEventListener('click', closeDrawer);
+}
+
+function levelClass(level) {
+  return normalize(level || '').replace(/\s+/g, '-');
+}
+
+function renderTunnelSelect() {
+  el.tunnelSelect.innerHTML = Object.entries(TUNNELS).map(([id,t]) => `<option value="${id}">${escapeHtml(t.name)}${t.disabled ? ' · futuro' : ''}</option>`).join('');
+  el.tunnelSelect.value = state.tunnelId;
+  renderTunnelContext();
+}
+
+function renderTunnelContext() {
+  const tunnel = TUNNELS[state.tunnelId];
+  el.directionSelect.innerHTML = tunnel.directions.map(d => `<option>${escapeHtml(d)}</option>`).join('');
+  el.tubeSelect.innerHTML = tunnel.tubes.map(t => `<option>${escapeHtml(t)}</option>`).join('');
+}
+
+function renderCategories() {
+  const counts = Object.values(PROTOCOLS).reduce((acc,p) => { acc[p.category] = (acc[p.category] || 0) + 1; return acc; }, {});
+  el.categoryGrid.innerHTML = Object.entries(CATEGORIES).map(([id,c]) => `
+    <button class="category-btn ${state.category === id ? 'active' : ''}" data-category="${id}">
+      <span>
+        <span class="category-name"><span>${c.icon}</span>${escapeHtml(c.name)}</span>
+        <span class="count">${escapeHtml(c.hint)}</span>
+      </span>
+      <span class="pill">${counts[id] || 0}</span>
+    </button>
+  `).join('');
+  el.categoryGrid.querySelectorAll('[data-category]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.category = btn.dataset.category;
+      renderCategories();
+      renderProtocolList();
+    });
+  });
+}
+
+function renderProtocolList() {
+  const tunnel = TUNNELS[state.tunnelId];
+  const q = normalize(el.protocolSearch.value || '');
+  const protocols = tunnel.enabledProtocols
+    .map(code => PROTOCOLS[code])
+    .filter(Boolean)
+    .filter(p => p.category === state.category)
+    .filter(p => !q || normalize([p.code, p.title, ...(p.keywords || [])].join(' ')).includes(q));
+
+  el.protocolCounter.textContent = protocols.length;
+  el.protocolList.innerHTML = protocols.length ? protocols.map(p => `
+    <button class="protocol-btn ${state.protocolCode === p.code ? 'active' : ''}" data-protocol="${p.code}">
+      <span class="code-chip ${levelClass(p.level)}">${p.code}</span>
+      <span>
+        <span class="protocol-title">${escapeHtml(p.title)}</span>
+        <span class="protocol-meta">${CATEGORIES[p.category].name} · ${p.level}</span>
+      </span>
+      <span>›</span>
+    </button>
+  `).join('') : `<div style="color:var(--muted);font-size:13px;line-height:1.5;padding:12px;">No hay protocolos para este filtro.</div>`;
+
+  el.protocolList.querySelectorAll('[data-protocol]').forEach(btn => {
+    btn.addEventListener('click', () => startProtocol(btn.dataset.protocol));
+  });
+}
+
+function renderHome() {
+  state.protocolCode = null;
+  state.nodeId = null;
+  renderProtocolList();
+  renderProgress();
+  el.stage.innerHTML = `
+    <div class="hero-card">
+      <div class="hero-icon">🧭</div>
+      <h2>Elige el incidente y avanza por tarjetas</h2>
+      <p>La pantalla principal solo muestra una decisión cada vez. Los umbrales, el detalle técnico, la checklist y el historial quedan ocultos hasta que los necesites.</p>
+      <div class="quick-grid">
+        ${Object.entries(CATEGORIES).map(([id,c]) => `
+          <button class="quick-card" data-quick-category="${id}">
+            <strong>${c.icon} ${escapeHtml(c.name)}</strong>
+            <small>${escapeHtml(c.hint)}</small>
+          </button>
+        `).join('')}
+      </div>
+      <div class="notice">Prototipo operativo de consulta rápida basado en el PAU. No sustituye la validación formal del procedimiento oficial.</div>
+    </div>
+  `;
+  el.stage.querySelectorAll('[data-quick-category]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.category = btn.dataset.quickCategory;
+      renderCategories();
+      renderProtocolList();
+    });
+  });
+}
+
+function startProtocol(code) {
+  const p = PROTOCOLS[code];
+  if (!p) return;
+  state.protocolCode = code;
+  state.nodeId = 'start';
+  state.sessionStartedAt = state.sessionStartedAt || new Date();
+  state.lastThresholdResult = null;
+  renderCategories();
+  renderProtocolList();
+  logEvent(`Protocolo iniciado: ${p.code} · ${p.title}`);
+  addChecklist([`Registrar contexto: túnel, sentido, tubo, localización y hora de detección (${p.code}).`]);
+  renderCurrentNode();
+  updateStatus();
+}
+
+function renderCurrentNode() {
+  const p = PROTOCOLS[state.protocolCode];
+  const node = p.nodes[state.nodeId];
+  if (!node) return;
+  if (node.actions) addChecklist(node.actions.map(a => `${p.code}: ${a}`));
+  renderProgress();
+  updateStatus();
+
+  if (node.type === 'choice') renderChoiceNode(p, node);
+  else if (node.type === 'action') renderActionNode(p, node);
+  else if (node.type === 'terminal') renderTerminalNode(p, node);
+  else if (node.type === 'gasInput') renderGasInput(p, node);
+  else if (node.type === 'opacityInput') renderOpacityInput(p, node);
+  else if (node.type === 'note') renderNoteNode(p, node);
+}
+
+function cardBase(p, node, inner) {
+  const category = CATEGORIES[p.category];
+  return `
+    <div class="wizard-card" id="activeCard">
+      <div class="wizard-meta">
+        <span class="pill green">${escapeHtml(p.level)}</span>
+        <span class="pill">${escapeHtml(p.code)}</span>
+        <span class="pill">${category.icon} ${escapeHtml(category.name)}</span>
+      </div>
+      <h2 class="wizard-title">${escapeHtml(node.title)}</h2>
+      ${node.help ? `<p class="wizard-help">${escapeHtml(node.help)}</p>` : ''}
+      ${inner}
+      <div class="wizard-footer">
+        <div class="footer-left">
+          <button class="ghost-btn" id="btnBack">← Atrás</button>
+          <button class="ghost-btn" id="btnHome">Inicio</button>
+        </div>
+        <div class="footer-right">
+          <button class="small-btn" id="btnDetailInCard">Detalle técnico</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function afterCardRender() {
+  const back = document.getElementById('btnBack');
+  const home = document.getElementById('btnHome');
+  const detail = document.getElementById('btnDetailInCard');
+  if (back) back.addEventListener('click', goBack);
+  if (home) home.addEventListener('click', renderHome);
+  if (detail) detail.addEventListener('click', () => openDrawer('technical'));
+}
+
+function renderChoiceNode(p, node) {
+  el.stage.innerHTML = cardBase(p, node, `
+    ${node.actions ? renderActionStrip(node.actions.slice(0,3)) : ''}
+    <div class="question">${escapeHtml(node.question || 'Selecciona una opción')}</div>
+    <div class="choices">
+      ${node.options.map((o, i) => `
+        <button class="choice-btn ${o.tone || ''}" data-next="${escapeHtml(o.next)}" data-label="${escapeHtml(o.label)}">
+          <span class="label">${escapeHtml(o.label)}</span>
+          ${o.hint ? `<span class="hint">${escapeHtml(o.hint)}</span>` : ''}
+        </button>
+      `).join('')}
+    </div>
+  `);
+  el.stage.querySelectorAll('[data-next]').forEach(btn => {
+    btn.addEventListener('click', () => moveTo(btn.dataset.next, btn.dataset.label));
+  });
+  afterCardRender();
+}
+
+function renderActionNode(p, node) {
+  el.stage.innerHTML = cardBase(p, node, `
+    ${renderActionStrip(node.actions || [])}
+    <div class="wizard-footer" style="margin-top:22px;">
+      <div class="footer-left"></div>
+      <div class="footer-right">
+        <button class="primary-btn" id="btnActionNext">Hecho · siguiente</button>
+      </div>
+    </div>
+  `);
+  document.getElementById('btnActionNext').addEventListener('click', () => moveTo(node.next, 'Acciones realizadas'));
+  afterCardRender();
+}
+
+function renderNoteNode(p, node) {
+  const fields = node.fields || [];
+  el.stage.innerHTML = cardBase(p, node, `
+    ${renderActionStrip(node.actions || [])}
+    <div class="input-zone">
+      ${fields.map(f => `
+        <div class="field">
+          <label for="note_${f.id}">${escapeHtml(f.label)}</label>
+          <input id="note_${f.id}" class="form-input" placeholder="${escapeHtml(f.placeholder || '')}" value="${escapeHtml(state.notes[f.id] || '')}" />
+        </div>
+      `).join('')}
+    </div>
+    <div class="wizard-footer" style="margin-top:22px;">
+      <div class="footer-left"></div>
+      <div class="footer-right"><button class="primary-btn" id="btnNoteNext">Guardar y seguir</button></div>
+    </div>
+  `);
+  document.getElementById('btnNoteNext').addEventListener('click', () => {
+    fields.forEach(f => state.notes[f.id] = document.getElementById('note_' + f.id).value.trim());
+    logEvent('Datos registrados: ' + fields.map(f => `${f.label}: ${state.notes[f.id] || 'sin dato'}`).join(' · '));
+    moveTo(node.next, 'Datos registrados');
+  });
+  afterCardRender();
+}
+
+function renderTerminalNode(p, node) {
+  el.stage.innerHTML = cardBase(p, node, `
+    <div class="threshold-result">
+      <div class="result-main">
+        <strong>${escapeHtml(node.status || 'Resultado')}</strong>
+        <span class="pill ${node.status && node.status.toLowerCase().includes('urgente') ? 'red' : node.status && node.status.toLowerCase().includes('deriv') ? 'amber' : 'green'}">${escapeHtml(p.code)}</span>
+      </div>
+      <p style="color:var(--text);line-height:1.55;margin-bottom:0;">${escapeHtml(node.summary || '')}</p>
+    </div>
+    ${renderActionStrip(node.actions || [])}
+    <div class="wizard-footer" style="margin-top:22px;">
+      <div class="footer-left"></div>
+      <div class="footer-right">
+        ${node.jump && PROTOCOLS[node.jump] ? `<button class="primary-btn" id="btnJump">Abrir ${escapeHtml(node.jump)}</button>` : ''}
+        <button class="small-btn" id="btnExportEnd">Exportar informe</button>
+      </div>
+    </div>
+  `);
+  const jump = document.getElementById('btnJump');
+  if (jump) jump.addEventListener('click', () => startProtocol(node.jump));
+  document.getElementById('btnExportEnd').addEventListener('click', exportReport);
+  afterCardRender();
+}
+
+function renderGasInput(p, node) {
+  const previous = state.lastThresholdResult;
+  el.stage.innerHTML = cardBase(p, node, `
+    <div class="input-zone">
+      <div class="form-grid">
+        <div class="field">
+          <label for="gasType">Gas</label>
+          <select id="gasType" class="form-select">
+            <option value="CO">CO · monóxido de carbono</option>
+            <option value="NO2">NO₂ · dióxido de nitrógeno</option>
+            <option value="NO">NO · óxido nítrico</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="gasValue">Valor detectado</label>
+          <input id="gasValue" class="form-input" type="number" step="0.1" min="0" placeholder="Ej. 85" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="peopleInside">Personas en el interior</label>
+        <select id="peopleInside" class="form-select">
+          <option value="unknown">No confirmado</option>
+          <option value="yes">Sí: personal, peatones o mantenimiento</option>
+          <option value="no">No consta presencia</option>
+        </select>
+      </div>
+      <button class="primary-btn" id="btnGasCalc">Calcular nivel y seguir</button>
+      <div id="gasResult">${previous ? renderThresholdResult(previous) : ''}</div>
+    </div>
+  `);
+  document.getElementById('btnGasCalc').addEventListener('click', () => {
+    const gas = document.getElementById('gasType').value;
+    const value = Number(document.getElementById('gasValue').value);
+    const people = document.getElementById('peopleInside').value;
+    if (!Number.isFinite(value) || value < 0) { alert('Introduce un valor válido.'); return; }
+    const result = classifyGas(gas, value, people);
+    state.lastThresholdResult = result;
+    logEvent(`Lectura gases: ${gas} = ${value} ${THRESHOLDS.gases[gas].unit} · nivel ${result.label}`);
+    addChecklist([`${p.code}: Registrar lectura ${gas} = ${value} ${THRESHOLDS.gases[gas].unit} y detector asociado.`]);
+    document.getElementById('gasResult').innerHTML = renderThresholdResult(result);
+    setTimeout(() => {
+      const minSeverity = node.minSeverity ?? 0;
+      const maxProceedSeverity = node.maxProceedSeverity ?? 1;
+      if (result.severity > maxProceedSeverity) moveTo(node.escalateNode || 'escalate', `Nivel ${result.label}`);
+      else if (result.severity < minSeverity && p.nodes.belowThreshold) moveTo('belowThreshold', `Nivel ${result.label}`);
+      else if (people === 'yes' && p.nodes.peopleWarning) moveTo('peopleWarning', 'Personas dentro');
+      else moveTo('levelOk', `Nivel ${result.label}`);
+    }, 260);
+  });
+  afterCardRender();
+}
+
+function renderOpacityInput(p, node) {
+  const previous = state.lastThresholdResult;
+  el.stage.innerHTML = cardBase(p, node, `
+    <div class="input-zone">
+      <div class="field">
+        <label for="opacityValue">Valor K del opacímetro (m⁻¹)</label>
+        <input id="opacityValue" class="form-input" type="number" step="0.001" min="0" placeholder="Ej. 0.0075" />
+      </div>
+      <button class="primary-btn" id="btnOpacityCalc">Calcular nivel y seguir</button>
+      <div id="opacityResult">${previous ? renderThresholdResult(previous) : ''}</div>
+    </div>
+  `);
+  document.getElementById('btnOpacityCalc').addEventListener('click', () => {
+    const value = Number(document.getElementById('opacityValue').value);
+    if (!Number.isFinite(value) || value < 0) { alert('Introduce un valor K válido.'); return; }
+    const result = classifyOpacity(value);
+    state.lastThresholdResult = result;
+    logEvent(`Lectura opacidad: K = ${value} m⁻¹ · nivel ${result.label}`);
+    addChecklist([`${p.code}: Registrar valor de opacidad K = ${value} m⁻¹ y opacímetro asociado.`]);
+    document.getElementById('opacityResult').innerHTML = renderThresholdResult(result);
+    setTimeout(() => {
+      const minSeverity = node.minSeverity ?? 0;
+      const maxProceedSeverity = node.maxProceedSeverity ?? 1;
+      if (result.severity > maxProceedSeverity) moveTo(node.escalateNode || 'escalate', `Nivel ${result.label}`);
+      else if (result.severity < minSeverity && p.nodes.belowThreshold) moveTo('belowThreshold', `Nivel ${result.label}`);
+      else moveTo('levelOk', `Nivel ${result.label}`);
+    }, 260);
+  });
+  afterCardRender();
+}
+
+function renderActionStrip(actions) {
+  if (!actions || !actions.length) return '';
+  return `
+    <div class="action-strip">
+      <h3>Acción inmediata</h3>
+      <div class="action-list">
+        ${actions.map(a => `<div class="action-item">${escapeHtml(a)}</div>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function classifyGas(gas, value, people) {
+  const t = THRESHOLDS.gases[gas];
+  let label = 'Normal / bajo prealerta', severity = 0, pct = Math.min(100, value / t.closure * 100), tone = 'green';
+  if (value >= t.closure) { label = 'Cierre / emergencia'; severity = 3; tone = 'red'; }
+  else if (value >= t.alert) { label = 'Alerta'; severity = 2; tone = 'amber'; }
+  else if (value >= t.prealert) { label = 'Prealerta'; severity = 1; tone = 'green'; }
+  const warning = people === 'yes' && gas === 'CO' && value > 20 ? 'Con personas dentro, CO > 20 ppm exige vigilancia especialmente diligente.' : (people === 'yes' ? t.note : '');
+  return { kind:'gas', gas, value, unit:t.unit, label, severity, pct, tone, warning, thresholds:t };
+}
+
+function classifyOpacity(value) {
+  const t = THRESHOLDS.opacity;
+  let label = 'Normal / bajo prealerta', severity = 0, pct = Math.min(100, value / t.closure * 100), tone = 'green';
+  if (value >= t.closure) { label = 'Cierre / emergencia'; severity = 3; tone = 'red'; }
+  else if (value >= t.alert) { label = 'Alerta'; severity = 2; tone = 'amber'; }
+  else if (value >= t.prealert) { label = 'Prealerta'; severity = 1; tone = 'green'; }
+  return { kind:'opacity', value, unit:t.unit, label, severity, pct, tone, thresholds:t };
+}
+
+function renderThresholdResult(result) {
+  const name = result.kind === 'gas' ? `${escapeHtml(result.gas)} = ${result.value} ${escapeHtml(result.unit)}` : `K = ${result.value} ${escapeHtml(result.unit)}`;
+  return `
+    <div class="threshold-result">
+      <div class="result-main">
+        <strong>${name}</strong>
+        <span class="pill ${result.tone}">${escapeHtml(result.label)}</span>
+      </div>
+      <div class="meter"><div class="meter-pin" style="left:calc(${Math.max(0, Math.min(100, result.pct))}% - 2px)"></div></div>
+      ${result.warning ? `<div class="notice">${escapeHtml(result.warning)}</div>` : ''}
+    </div>
+  `;
+}
+
+function moveTo(nextId, label) {
+  const p = PROTOCOLS[state.protocolCode];
+  const node = p.nodes[state.nodeId];
+  logEvent(`${node.title} → ${label}`);
+  state.nodeId = nextId;
+  renderCurrentNode();
+}
+
+function goBack() {
+  if (!state.protocolCode || state.history.length < 2) return;
+  // Buscar último evento de cambio no es suficiente para una pila real; solución simple: volver al inicio del protocolo.
+  const ok = confirm('Volver reinicia el flujo del protocolo actual desde la primera tarjeta. ¿Continuar?');
+  if (!ok) return;
+  state.nodeId = 'start';
+  logEvent('Flujo reiniciado desde primera tarjeta del protocolo actual.');
+  renderCurrentNode();
+}
+
+function renderProgress() {
+  const p = state.protocolCode ? PROTOCOLS[state.protocolCode] : null;
+  const node = p && state.nodeId ? p.nodes[state.nodeId] : null;
+  const phase = node ? node.phase : -1;
+  el.progressTitle.textContent = p ? `${p.code} · ${p.title}` : 'Sin protocolo iniciado';
+  el.progressText.textContent = p ? (p.phases[phase] || 'En curso') : 'Selecciona una categoría o un PAU';
+  el.progressSteps.innerHTML = Array.from({length:5}).map((_,i) => `<div class="step-dot ${i < phase ? 'done' : i === phase ? 'active' : ''}"></div>`).join('');
+}
+
+function addChecklist(items) {
+  if (!items || !items.length) return;
+  items.forEach(text => {
+    if (!state.checklist.some(x => x.text === text)) {
+      state.checklist.push({ id: cryptoId(), text, done:false, time: new Date() });
+    }
+  });
+}
+
+function logEvent(text) {
+  state.history.push({ time: new Date(), text });
+  updateStatus();
+}
+
+function updateStatus() {
+  const tunnel = TUNNELS[state.tunnelId];
+  const p = state.protocolCode ? PROTOCOLS[state.protocolCode] : null;
+  el.topStatus.innerHTML = `<span class="dot"></span><span>Túnel activo: ${escapeHtml(tunnel.name)} · ${p ? escapeHtml(p.code) + ' en curso' : 'Sistema en espera'}</span>`;
+  const pending = state.checklist.filter(x => !x.done).length;
+  el.sessionSummary.textContent = p
+    ? `${p.code} · ${p.title} · ${state.history.length} eventos · ${pending} acciones pendientes`
+    : `No hay incidencia activa. ${state.history.length ? state.history.length + ' eventos registrados.' : 'El registro comenzará al iniciar un protocolo.'}`;
+}
+
+function openDrawer(type) {
+  if (type === 'history') {
+    el.drawerTitle.textContent = 'Historial de actuación';
+    el.drawerContent.innerHTML = renderHistoryDrawer();
+  } else if (type === 'checklist') {
+    el.drawerTitle.textContent = 'Checklist operativa';
+    el.drawerContent.innerHTML = renderChecklistDrawer();
+    bindChecklistEvents();
+  } else {
+    el.drawerTitle.textContent = 'Detalle técnico';
+    el.drawerContent.innerHTML = renderTechnicalDrawer();
+  }
+  el.drawer.classList.add('open');
+  el.drawerBackdrop.classList.add('open');
+}
+
+function closeDrawer() {
+  el.drawer.classList.remove('open');
+  el.drawerBackdrop.classList.remove('open');
+}
+
+function renderHistoryDrawer() {
+  if (!state.history.length) return `<p style="color:var(--muted);line-height:1.6;">Aún no hay eventos registrados.</p>`;
+  return `<div class="timeline">${state.history.slice().reverse().map(h => `
+    <div class="timeline-item">
+      <div class="timeline-time">${formatDateTime(h.time)}</div>
+      <div class="timeline-text">${escapeHtml(h.text)}</div>
+    </div>
+  `).join('')}</div>`;
+}
+
+function renderChecklistDrawer() {
+  if (!state.checklist.length) return `<p style="color:var(--muted);line-height:1.6;">Aún no hay acciones en la checklist.</p>`;
+  return state.checklist.map(item => `
+    <label class="check-row ${item.done ? 'done' : ''}">
+      <input type="checkbox" data-check-id="${item.id}" ${item.done ? 'checked' : ''} />
+      <span>${escapeHtml(item.text)}<br><small style="color:var(--muted);">Añadido: ${formatTime(item.time)}</small></span>
+    </label>
+  `).join('');
+}
+
+function bindChecklistEvents() {
+  el.drawerContent.querySelectorAll('[data-check-id]').forEach(input => {
+    input.addEventListener('change', () => {
+      const item = state.checklist.find(x => x.id === input.dataset.checkId);
+      if (item) {
+        item.done = input.checked;
+        logEvent(`${item.done ? 'Acción marcada como hecha' : 'Acción reabierta'}: ${item.text}`);
+        openDrawer('checklist');
+      }
+    });
+  });
+}
+
+function renderTechnicalDrawer() {
+  const p = state.protocolCode ? PROTOCOLS[state.protocolCode] : null;
+  if (!p) {
+    return `<p style="color:var(--muted);line-height:1.6;">Selecciona un protocolo para ver su ficha técnica resumida.</p>`;
+  }
+  const thresholds = renderThresholds(p);
+  return `
+    <div class="detail-section">
+      <h3>Protocolo</h3>
+      <p><strong>${escapeHtml(p.code)} · ${escapeHtml(p.title)}</strong></p>
+      <p>${escapeHtml(p.description || '')}</p>
+    </div>
+    <div class="detail-section">
+      <h3>Localización posible</h3>
+      <p>${escapeHtml(p.location || 'No indicada.')}</p>
+    </div>
+    <div class="detail-section">
+      <h3>Detección / origen posible</h3>
+      <ul>${(p.detection || []).map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>
+    </div>
+    ${thresholds}
+    <div class="detail-section">
+      <h3>Información a registrar</h3>
+      <ul>${(p.info || []).map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>
+    </div>
+    <div class="notice">Este detalle está resumido para consulta operativa rápida. La validación definitiva debe hacerse contra el PAU oficial.</div>
+  `;
+}
+
+function renderThresholds(p) {
+  if (!p.thresholds) return '';
+  if (p.thresholds.type === 'gases') {
+    return `
+      <div class="detail-section">
+        <h3>Umbrales CO / NOx</h3>
+        <table class="threshold-table">
+          <thead><tr><th>Gas</th><th>Prealerta</th><th>Alerta</th><th>Cierre</th></tr></thead>
+          <tbody>
+            <tr><td>CO</td><td>70 ppm</td><td>150 ppm</td><td>200 ppm</td></tr>
+            <tr><td>NO₂</td><td>0,8 ppm</td><td>1,2 ppm</td><td>2 ppm</td></tr>
+            <tr><td>NO</td><td>7,2 ppm</td><td>10,8 ppm</td><td>20 ppm</td></tr>
+          </tbody>
+        </table>
+      </div>`;
+  }
+  if (p.thresholds.type === 'opacity') {
+    return `
+      <div class="detail-section">
+        <h3>Umbrales opacidad</h3>
+        <table class="threshold-table">
+          <thead><tr><th>Indicador</th><th>Prealerta</th><th>Alerta</th><th>Cierre</th></tr></thead>
+          <tbody><tr><td>Opacidad K</td><td>7·10⁻³ m⁻¹</td><td>9·10⁻³ m⁻¹</td><td>1,2·10⁻² m⁻¹</td></tr></tbody>
+        </table>
+      </div>`;
+  }
+  return '';
+}
+
+function exportReport() {
+  const tunnel = TUNNELS[state.tunnelId];
+  const p = state.protocolCode ? PROTOCOLS[state.protocolCode] : null;
+  const lines = [];
+  lines.push('INFORME DE INCIDENCIA · ASISTENTE PAU GLÒRIES');
+  lines.push('================================================');
+  lines.push('Fecha exportación: ' + formatDateTime(new Date()));
+  lines.push('Túnel: ' + tunnel.name);
+  lines.push('Sentido: ' + (el.directionSelect.value || 'No indicado'));
+  lines.push('Tubo: ' + (el.tubeSelect.value || 'No indicado'));
+  lines.push('Localización: ' + (el.incidentLocation.value || 'No indicada'));
+  lines.push('Protocolo: ' + (p ? `${p.code} · ${p.title}` : 'No iniciado'));
+  lines.push('Notas: ' + (el.incidentNotes.value || 'Sin notas'));
+  const noteKeys = Object.keys(state.notes);
+  if (noteKeys.length) {
+    lines.push('');
+    lines.push('DATOS REGISTRADOS');
+    lines.push('------------------');
+    noteKeys.forEach(k => lines.push(`${k}: ${state.notes[k] || ''}`));
+  }
+  lines.push('');
+  lines.push('CHECKLIST');
+  lines.push('---------');
+  if (state.checklist.length) state.checklist.forEach(item => lines.push(`[${item.done ? 'X' : ' '}] ${item.text}`));
+  else lines.push('Sin acciones registradas.');
+  lines.push('');
+  lines.push('HISTORIAL');
+  lines.push('---------');
+  if (state.history.length) state.history.forEach(h => lines.push(`[${formatDateTime(h.time)}] ${h.text}`));
+  else lines.push('Sin eventos registrados.');
+  lines.push('');
+  lines.push('Nota: prototipo de consulta rápida. Validar contra el PAU oficial antes de uso operacional real.');
+
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const safeCode = p ? p.code : 'sin_protocolo';
+  a.href = url;
+  a.download = `Informe_PAU_Glories_${safeCode}_${Date.now()}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function resetSession() {
+  const ok = confirm('¿Reiniciar la sesión actual? Se borrará el flujo, historial y checklist de esta pantalla.');
+  if (!ok) return;
+  state.protocolCode = null;
+  state.nodeId = null;
+  state.history = [];
+  state.checklist = [];
+  state.notes = {};
+  state.sessionStartedAt = null;
+  state.lastThresholdResult = null;
+  el.incidentLocation.value = '';
+  el.incidentNotes.value = '';
+  renderHome();
+  updateStatus();
+}
+
+function normalize(s) {
+  return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+}
+function formatTime(date) {
+  return new Date(date).toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+function formatDateTime(date) {
+  return new Date(date).toLocaleString('es-ES', { dateStyle:'short', timeStyle:'medium' });
+}
+function cryptoId() {
+  if (window.crypto && crypto.getRandomValues) {
+    const arr = new Uint32Array(2);
+    crypto.getRandomValues(arr);
+    return Array.from(arr).map(x => x.toString(36)).join('');
+  }
+  return String(Date.now()) + Math.random().toString(36).slice(2);
+}
+
+init();
+</script>
+</body>
+</html>
