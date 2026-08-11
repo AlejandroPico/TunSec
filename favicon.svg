@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">TUNSEC</title>
+  <desc id="desc">Túnel con un ojo de vigilancia</desc>
+  <rect width="64" height="64" fill="#071827"/>
+  <path fill="#2EC4D6" fill-rule="evenodd" d="M6 56V31C6 15.5 17.6 4 32 4s26 11.5 26 27v25H46V31c0-8.7-5.9-15-14-15s-14 6.3-14 15v25H6Zm12-8h28v8H18v-8Z"/>
+  <path fill="#F8FAFC" d="M19 34c3.6-5 7.9-7.5 13-7.5S41.4 29 45 34c-3.6 5-7.9 7.5-13 7.5S22.6 39 19 34Z"/>
+  <circle cx="32" cy="34" r="6" fill="#071827"/>
+  <circle cx="32" cy="34" r="2.5" fill="#F5B942"/>
+  <path d="M10 56h44" stroke="#F8FAFC" stroke-width="4"/>
+</svg>
